@@ -1,0 +1,191 @@
+"use client";
+
+import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { useFormContext } from "react-hook-form";
+import type { CVData, SkillCategoryId, SkillLibrary } from "@/lib/cv-schema";
+import { SKILL_CATEGORY_LABELS } from "@/lib/cv-schema";
+import { formFieldClass, formLabelClass } from "@/lib/form-styles";
+import { cn } from "@/lib/cn";
+
+const CATEGORY_ORDER: SkillCategoryId[] = [
+  "frontEnd",
+  "uiUx",
+  "tools",
+  "aiAutomation",
+  "principles",
+  "cms",
+  "os",
+];
+
+export function SkillsManager({
+  skillLibrary,
+  onSkillLibraryChange,
+}: {
+  skillLibrary: SkillLibrary;
+  onSkillLibraryChange: (next: SkillLibrary) => void;
+}) {
+  const { watch, setValue } = useFormContext<CVData>();
+  const skills = watch("sidebar.skills") ?? [];
+  const byId = new Map<SkillCategoryId, (typeof skills)[0]>();
+  for (const s of skills) {
+    byId.set(s.categoryId, s);
+  }
+
+  return (
+    <div className="space-y-8">
+      <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
+        Manage your global tag library, then choose which tags appear on this CV.
+      </p>
+      {CATEGORY_ORDER.map((categoryId) => (
+        <CategoryBlock
+          key={categoryId}
+          label={skillLibrary[categoryId]?.label ?? SKILL_CATEGORY_LABELS[categoryId]}
+          libraryTags={skillLibrary[categoryId]?.tags ?? []}
+          visibleTags={byId.get(categoryId)?.visibleTags ?? []}
+          onLibraryTagsChange={(tags) => {
+            onSkillLibraryChange({
+              ...skillLibrary,
+              [categoryId]: {
+                ...skillLibrary[categoryId],
+                label: skillLibrary[categoryId]?.label ?? SKILL_CATEGORY_LABELS[categoryId],
+                tags,
+              },
+            });
+            const vis = byId.get(categoryId)?.visibleTags ?? [];
+            const filtered = vis.filter((t) => tags.includes(t));
+            const idx = skills.findIndex((s) => s.categoryId === categoryId);
+            if (idx >= 0) {
+              setValue(`sidebar.skills.${idx}.visibleTags`, filtered, {
+                shouldDirty: true,
+              });
+            }
+          }}
+          onToggleVisible={(tag, on) => {
+            const idx = skills.findIndex((s) => s.categoryId === categoryId);
+            const current = byId.get(categoryId)?.visibleTags ?? [];
+            let next: string[];
+            if (on) next = [...new Set([...current, tag])];
+            else next = current.filter((t) => t !== tag);
+            if (idx >= 0) {
+              setValue(`sidebar.skills.${idx}.visibleTags`, next, { shouldDirty: true });
+            } else {
+              setValue(
+                "sidebar.skills",
+                [...skills, { categoryId, visibleTags: next }],
+                { shouldDirty: true },
+              );
+            }
+          }}
+          onAddLibraryTag={(tag) => {
+            const t = tag.trim();
+            if (!t) return;
+            const tags = skillLibrary[categoryId]?.tags ?? [];
+            if (tags.includes(t)) return;
+            onSkillLibraryChange({
+              ...skillLibrary,
+              [categoryId]: {
+                ...skillLibrary[categoryId],
+                label: skillLibrary[categoryId]?.label ?? SKILL_CATEGORY_LABELS[categoryId],
+                tags: [...tags, t],
+              },
+            });
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CategoryBlock({
+  label,
+  libraryTags,
+  visibleTags,
+  onLibraryTagsChange,
+  onToggleVisible,
+  onAddLibraryTag,
+}: {
+  label: string;
+  libraryTags: string[];
+  visibleTags: string[];
+  onLibraryTagsChange: (tags: string[]) => void;
+  onToggleVisible: (tag: string, on: boolean) => void;
+  onAddLibraryTag: (tag: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  return (
+    <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/[0.03] dark:border-slate-700 dark:bg-slate-900 dark:ring-white/[0.04]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className="text-base font-semibold text-slate-900 dark:text-slate-50">{label}</h4>
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        {libraryTags.length === 0 && (
+          <p className="text-base text-slate-500 dark:text-slate-400">No tags in library for this category.</p>
+        )}
+        {libraryTags.map((tag) => {
+          const on = visibleTags.includes(tag);
+          return (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => onToggleVisible(tag, !on)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                on
+                  ? "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-100"
+                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500",
+              )}
+              aria-pressed={on}
+            >
+              {tag}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add tag to library"
+          className={cn(formFieldClass, "min-w-44 flex-1")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onAddLibraryTag(draft);
+              setDraft("");
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+          onClick={() => {
+            onAddLibraryTag(draft);
+            setDraft("");
+          }}
+        >
+          <Plus className="size-3.5" aria-hidden />
+          Add
+        </button>
+      </div>
+      <p className={formLabelClass}>Remove from library</p>
+      <div className="flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
+        {libraryTags.map((tag) => (
+          <button
+            key={`rm-${tag}`}
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-slate-600 dark:hover:bg-red-950/40 dark:hover:border-red-800 dark:hover:text-red-300"
+            onClick={() =>
+              onLibraryTagsChange(libraryTags.filter((t) => t !== tag))
+            }
+            title="Remove from library"
+          >
+            <X className="size-3" aria-hidden />
+            {tag}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}

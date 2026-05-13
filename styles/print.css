@@ -1,0 +1,26 @@
+/* Browser print: hide app chrome, print CV at A4 */
+
+@page {
+  size: A4;
+  margin: 12mm 12mm 14mm 12mm;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  .cv-print-root {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
