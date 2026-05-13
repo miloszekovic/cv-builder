@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CV Builder
 
-## Getting Started
+A web app for building CVs: a validated form, live preview, themes, browser storage, and PDF export. Optionally generate a draft CV from a short description via the OpenAI API.
 
-First, run the development server:
+**Repository:** [github.com/miloszekovic/cv-builder](https://github.com/miloszekovic/cv-builder)
+
+## Features
+
+- **Editor** — profile, experience, education, skills (tag library), photo, layout options.
+- **Preview** — updates as you type; theme selection (light / dark variants).
+- **Local storage** — CV versions in `localStorage` (prefix `cv-gen:`).
+- **PDF** — server-side rendering (Playwright + Chromium), print CSS (`public/cv-print.css` built from Tailwind entry).
+- **AI draft** (optional) — `POST /api/generate-cv` with `OPENAI_API_KEY`; returns JSON matching the app schema.
+
+## Requirements
+
+- Node.js 20+
+- For PDF: Playwright Chromium installed (`npx playwright install chromium` after `npm install`).
+
+## Getting started
 
 ```bash
+npm install
+npx playwright install chromium   # only if you use PDF export
+npm run build:print-css           # before first build / PDF (also runs in npm run build)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` (see `.gitignore` for `.env*` patterns):
 
-## Learn More
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | No | If missing, the AI generate UI/API returns 503. |
+| `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini`. |
+| `PDF_EXPORT_ENABLED` | No | Set to `false` to disable `POST /api/export-pdf` (403). |
 
-To learn more about Next.js, take a look at the following resources:
+## npm scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Next.js dev server. |
+| `npm run build` | Build print CSS, then production Next build. |
+| `npm run start` | Production server (after `build`). |
+| `npm run build:print-css` | Tailwind → `public/cv-print.css`. |
+| `npm run demo:pdf` | Writes a demo PDF under `output/pdf/` (helper script). |
+| `npm run lint` | ESLint. |
+| `npm run typecheck` | TypeScript check without emit. |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Stack
 
-## Deploy on Vercel
+Next.js (App Router), React 19, TypeScript, Tailwind CSS v4, React Hook Form, Zod, OpenAI SDK, Playwright.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API (short)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **`POST /api/generate-cv`** — body: `{ "description": "...", "targetRole": "...", "tone": "professional"|"direct"|"friendly", "maxCvLength": "short"|"medium" }`. Response: `{ "cv": { ... } }` or an error object with `code`.
+- **`POST /api/export-pdf`** — body: `{ "cv": { ... } }` (same shape as in the app). Response: PDF bytes or JSON error.
+
+Schema and defaults: `lib/cv-schema.ts`, `lib/default-cv-data.ts`.
