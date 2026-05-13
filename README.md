@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment variables
 
-Create `.env.local` (see `.gitignore` for `.env*` patterns):
+Copy `.env.example` to `.env.local` and set values there (secrets stay untracked):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -46,7 +46,7 @@ Create `.env.local` (see `.gitignore` for `.env*` patterns):
 | `npm run build` | Build print CSS, then production Next build. |
 | `npm run start` | Production server (after `build`). |
 | `npm run build:print-css` | Tailwind → `public/cv-print.css`. |
-| `npm run demo:pdf` | Writes a demo PDF under `output/pdf/` (helper script). |
+| `npm run demo:pdf` | Writes a demo PDF under `output/pdf/` (local only; `output/` is gitignored). |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | TypeScript check without emit. |
 
