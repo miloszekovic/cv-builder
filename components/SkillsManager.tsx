@@ -34,10 +34,7 @@ export function SkillsManager({
   }
 
   return (
-    <div className="space-y-8">
-      <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
-        Manage your global tag library, then choose which tags appear on this CV.
-      </p>
+    <div className="space-y-10">
       {CATEGORY_ORDER.map((categoryId) => (
         <CategoryBlock
           key={categoryId}
@@ -116,13 +113,13 @@ function CategoryBlock({
   const [draft, setDraft] = useState("");
 
   return (
-    <section className="motion-safe:transition-shadow motion-safe:duration-300 space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/3 motion-safe:hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-white/4">
+    <section className="motion-safe:transition-shadow motion-safe:duration-300 space-y-5 rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[0_2px_20px_-10px_rgb(0_0_0_/0.06)] ring-1 ring-zinc-950/4 motion-safe:hover:shadow-[0_8px_28px_-12px_rgb(0_0_0_/0.1)] dark:border-zinc-700/75 dark:bg-zinc-900/45 dark:ring-white/5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">{label}</h3>
+        <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{label}</h3>
       </div>
       <div className="flex flex-wrap gap-2.5">
         {libraryTags.length === 0 && (
-          <p className="text-base text-slate-500 dark:text-slate-400">No tags in library for this category.</p>
+          <p className="text-[0.9375rem] text-zinc-500 dark:text-zinc-400">No tags.</p>
         )}
         {libraryTags.map((tag) => {
           const on = visibleTags.includes(tag);
@@ -135,8 +132,8 @@ function CategoryBlock({
                 motionInteractive,
                 "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium",
                 on
-                  ? "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-100"
-                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500",
+                  ? "border-violet-300/90 bg-violet-50 text-violet-900 dark:border-violet-700/80 dark:bg-violet-950/50 dark:text-violet-100"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-300 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:border-zinc-500",
               )}
               aria-pressed={on}
               aria-label={
@@ -148,7 +145,7 @@ function CategoryBlock({
           );
         })}
       </div>
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+      <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-5 dark:border-zinc-700/80">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -167,7 +164,7 @@ function CategoryBlock({
           type="button"
           className={cn(
             motionInteractive,
-            "inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500",
+            "inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-violet-600 dark:hover:bg-violet-500",
           )}
           onClick={() => {
             onAddLibraryTag(draft);
@@ -180,14 +177,14 @@ function CategoryBlock({
         </button>
       </div>
       <p className={formLabelClass}>Remove from library</p>
-      <div className="flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <div className="flex flex-wrap gap-2 text-sm text-zinc-500 dark:text-zinc-400">
         {libraryTags.map((tag) => (
           <button
             key={`rm-${tag}`}
             type="button"
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-slate-600 dark:hover:bg-red-950/40 dark:hover:border-red-800 dark:hover:text-red-300",
+              "inline-flex items-center gap-1 rounded-lg border border-zinc-200/90 px-2.5 py-1.5 text-sm hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-zinc-600 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300",
             )}
             onClick={() =>
               onLibraryTagsChange(libraryTags.filter((t) => t !== tag))

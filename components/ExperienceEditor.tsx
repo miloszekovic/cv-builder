@@ -3,13 +3,13 @@
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
-import { formFieldClass, formLabelClass, formSelectClass } from "@/lib/form-styles";
+import { formFieldClass, formLabelClass, formLabelControlStack, formSelectClass } from "@/lib/form-styles";
 import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
 
 const addExperienceButtonClass = cn(
   motionInteractive,
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500",
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500",
 );
 
 const emptyExp = (): ExperienceItem => ({
@@ -31,11 +31,7 @@ export function ExperienceEditor() {
 
   if (fields.length === 0) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-          List jobs in reverse-chronological order. Each entry can include years, a short intro,
-          bullet achievements, and an optional closing line.
-        </p>
+      <div className="space-y-4">
         <button
           type="button"
           onClick={() => append(emptyExp())}
@@ -49,18 +45,18 @@ export function ExperienceEditor() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className="motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px space-y-4 rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/3 motion-safe:hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-white/4 dark:motion-safe:hover:shadow-black/25"
+          className="motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px space-y-5 rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[0_2px_20px_-10px_rgb(0_0_0_/0.08)] ring-1 ring-zinc-950/4 motion-safe:hover:shadow-[0_12px_36px_-14px_rgb(0_0_0_/0.12)] dark:border-zinc-700/75 dark:bg-zinc-900/45 dark:ring-white/5 dark:motion-safe:hover:shadow-[0_12px_36px_-12px_rgb(0_0_0_/0.4)]"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className={formLabelClass}>Role {index + 1}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                 disabled={index === 0}
                 onClick={() => move(index, index - 1)}
                 aria-label="Move experience up"
@@ -69,7 +65,7 @@ export function ExperienceEditor() {
               </button>
               <button
                 type="button"
-                className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                 disabled={index === fields.length - 1}
                 onClick={() => move(index, index + 1)}
                 aria-label="Move experience down"
@@ -78,7 +74,7 @@ export function ExperienceEditor() {
               </button>
               <button
                 type="button"
-                className="rounded-md p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
                 onClick={() => remove(index)}
                 aria-label="Remove experience"
               >
@@ -86,16 +82,16 @@ export function ExperienceEditor() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-1.5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className={formLabelControlStack}>
               <span className={formLabelClass}>Role</span>
               <input className={formFieldClass} {...register(`body.experience.${index}.role`)} />
             </label>
-            <label className="block space-y-1.5">
+            <label className={formLabelControlStack}>
               <span className={formLabelClass}>Company</span>
               <input className={formFieldClass} {...register(`body.experience.${index}.company`)} />
             </label>
-            <label className="block space-y-1.5">
+            <label className={formLabelControlStack}>
               <span className={formLabelClass}>Start year</span>
               <input
                 type="number"
@@ -106,7 +102,7 @@ export function ExperienceEditor() {
                 })}
               />
             </label>
-            <label className="block space-y-1.5">
+            <label className={formLabelControlStack}>
               <span className={formLabelClass}>End year</span>
               <Controller
                 control={control}
@@ -141,12 +137,12 @@ export function ExperienceEditor() {
               />
             </label>
           </div>
-          <label className="block space-y-1.5">
+          <label className={formLabelControlStack}>
             <span className={formLabelClass}>Company / role intro</span>
             <textarea rows={2} className={formFieldClass} {...register(`body.experience.${index}.intro`)} />
           </label>
           <BulletsEditor index={index} />
-          <label className="block space-y-1.5">
+          <label className={formLabelControlStack}>
             <span className={formLabelClass}>Outro (learned / growth)</span>
             <textarea rows={2} className={formFieldClass} {...register(`body.experience.${index}.outro`)} />
           </label>
@@ -170,7 +166,7 @@ export function ExperienceEditor() {
 function BulletsEditor({ index }: { index: number }) {
   const addBulletClass = cn(
     motionTextButton,
-    "text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300",
+    "text-[0.9375rem] font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300",
   );
   const { control, register } = useFormContext<CVData>();
   const { fields, append, remove } = useFieldArray({
@@ -190,7 +186,7 @@ function BulletsEditor({ index }: { index: number }) {
             />
             <button
               type="button"
-              className="shrink-0 rounded-md p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+              className="shrink-0 rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
               onClick={() => remove(bi)}
               aria-label="Remove bullet"
             >

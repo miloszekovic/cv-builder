@@ -28,13 +28,13 @@ export function ThemeSelect({ embedded = false }: ThemeSelectProps) {
   const btn = (active: boolean, kind: "dark" | "light") =>
     cn(
       motionInteractive,
-      "rounded-lg p-2 outline-hidden",
-      "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-      "dark:focus-visible:ring-offset-slate-900",
+      "rounded-xl p-2.5 outline-hidden",
+      "focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
+      "dark:focus-visible:ring-offset-zinc-900",
       kind === "dark"
         ? active
-          ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-500"
-          : "text-indigo-800 hover:bg-indigo-100/90 dark:text-indigo-200 dark:hover:bg-indigo-950/60"
+          ? "bg-violet-600 text-white shadow-[0_2px_8px_-2px_rgb(0_0_0_/0.25)] dark:bg-violet-500"
+          : "text-violet-900 hover:bg-violet-100/90 dark:text-violet-200 dark:hover:bg-violet-950/50"
         : active
           ? "bg-amber-500 text-white shadow-sm dark:bg-amber-500"
           : "text-amber-900 hover:bg-amber-100/90 dark:text-amber-100 dark:hover:bg-amber-950/50",
@@ -45,10 +45,10 @@ export function ThemeSelect({ embedded = false }: ThemeSelectProps) {
       role="group"
       aria-label="Theme"
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-lg p-1",
+        "inline-flex items-center gap-0.5 rounded-xl p-1",
         embedded
           ? "bg-transparent"
-          : "border border-slate-200/90 bg-slate-100/80 shadow-xs dark:border-slate-600 dark:bg-slate-800/90",
+          : "border border-zinc-200/80 bg-zinc-100/90 shadow-[inset_0_1px_0_rgb(255_255_255_/0.7)] dark:border-zinc-700 dark:bg-zinc-800/90",
       )}
     >
       <button

@@ -103,11 +103,13 @@ function ExperienceBlock({ items }: { items?: ExperienceItem[] }) {
   );
   if (!any) return null;
   return (
-    <section className="cv-print-main-section space-y-6">
+    <section className="cv-print-experience-group space-y-6">
       <PrintSectionTitle>EXPERIENCE</PrintSectionTitle>
       <div className="space-y-6">
         {items.map((exp, i) => (
-          <ExperienceItemView key={i} exp={exp} />
+          <div key={i} className="cv-print-experience-item">
+            <ExperienceItemView exp={exp} />
+          </div>
         ))}
       </div>
     </section>
@@ -188,8 +190,7 @@ function SidebarColumn({
   const langs = cv.sidebar.languages?.filter(
     (l) => hasText(l.name) || hasText(l.level),
   );
-  const hobbiesTags = (cv.sidebar.hobbies ?? []).filter(hasText);
-  const hasHobbies = hobbiesTags.length > 0 || hasText(cv.sidebar.hobbiesText);
+  const hasHobbies = hasText(cv.sidebar.hobbiesText);
 
   const skillBlocks = (cv.sidebar.skills ?? [])
     .map((s) => ({
@@ -278,23 +279,23 @@ function SidebarColumn({
       {hasHobbies && (
         <section className="cv-print-sidebar-section">
           <PrintSectionTitle>HOBBIES &amp; INTERESTS</PrintSectionTitle>
-          {hasText(cv.sidebar.hobbiesText) && (
-            <p className="text-[10.5px] leading-relaxed text-slate-800">
-              {cv.sidebar.hobbiesText}
-            </p>
-          )}
-          {hobbiesTags.length > 0 && (
-            <p className="mt-1 text-[10.5px] leading-relaxed text-slate-800">
-              {hobbiesTags.join(", ")}
-            </p>
-          )}
+          <p className="text-[10.5px] leading-relaxed text-slate-800">
+            {cv.sidebar.hobbiesText}
+          </p>
         </section>
       )}
     </aside>
   );
 }
 
-export function CVPrint({ cv }: { cv: CVData }) {
+export function CVPrint({
+  cv,
+  variant = "app",
+}: {
+  cv: CVData;
+  /** `pdf`: tighter, equal L / T / R inset for Playwright PDF export. */
+  variant?: "app" | "pdf";
+}) {
   const accent = getCvAccent(cv.meta.accent);
   const sidebarLeft = cv.meta.sidebarPosition === "left";
   const d = cv.sidebar.details;
@@ -304,7 +305,7 @@ export function CVPrint({ cv }: { cv: CVData }) {
   const showProfile = hasText(cv.body.profile);
 
   const header = (showName || showAvatar) && (
-    <header className="mb-8 flex gap-4 items-end">
+    <header className="cv-print-page-header mb-8 flex gap-4 items-end">
       {photoMode === "image" && hasText(cv.body.image) && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -363,7 +364,14 @@ export function CVPrint({ cv }: { cv: CVData }) {
       className="cv-print-root bg-white text-slate-900 antialiased scheme-light"
       style={{ "--cv-print-accent": accent.accent } as CSSProperties}
     >
-      <div className="mx-auto w-[210mm] max-w-full min-h-[297mm] box-border px-[12mm] py-[11mm]">
+      <div
+        className={cn(
+          "mx-auto w-[210mm] max-w-full box-border pb-[8mm]",
+          variant === "pdf"
+            ? "px-[8mm] pt-0"
+            : "px-[12mm] pt-[11mm]",
+        )}
+      >
         {header}
         <div
           className={cn(
@@ -375,13 +383,13 @@ export function CVPrint({ cv }: { cv: CVData }) {
         >
           {sidebarLeft ? (
             <>
-              <div className="min-w-0">{sidebarColumn}</div>
-              <div className="min-w-0">{mainColumn}</div>
+              <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
+              <div className="cv-print-column-main min-w-0">{mainColumn}</div>
             </>
           ) : (
             <>
-              <div className="min-w-0">{mainColumn}</div>
-              <div className="min-w-0">{sidebarColumn}</div>
+              <div className="cv-print-column-main min-w-0">{mainColumn}</div>
+              <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
             </>
           )}
         </div>

@@ -37,7 +37,7 @@ export function estimateCvLengthPressure(cv: CVData): number {
   const langs = cv.sidebar.languages?.length ?? 0;
   score += langs * 0.6;
 
-  const hobbies = (cv.sidebar.hobbies?.length ?? 0) + (cv.sidebar.hobbiesText?.length ?? 0) / 40;
+  const hobbies = (cv.sidebar.hobbiesText?.length ?? 0) / 40;
 
   score += hobbies * 0.5;
 

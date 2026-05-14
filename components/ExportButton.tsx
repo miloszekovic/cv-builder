@@ -10,7 +10,14 @@ import {
 import { cn } from "@/lib/cn";
 import { motionInteractive } from "@/lib/motion-styles";
 
-export function ExportButton({ getCv }: { getCv: () => CVData }) {
+export function ExportButton({
+  getCv,
+  compact,
+}: {
+  getCv: () => CVData;
+  /** Smaller controls for the centered header strip. */
+  compact?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -55,6 +62,13 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
     window.print();
   }
 
+  const primary = compact
+    ? "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-3.5 py-2.5 text-sm font-semibold text-white"
+    : "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-base font-semibold text-white";
+  const secondary = compact
+    ? "inline-flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/80"
+    : "inline-flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-4 py-3 text-base font-medium text-zinc-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/80";
+
   return (
     <div
       className="flex flex-wrap items-center gap-2"
@@ -69,30 +83,34 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
         aria-describedby={err ? "export-pdf-error" : undefined}
         className={cn(
           motionInteractive,
-          "inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-base font-semibold text-white",
-          "hover:bg-blue-700 hover:brightness-105 active:brightness-95 disabled:opacity-60 motion-reduce:hover:brightness-100 motion-reduce:active:brightness-100",
+          primary,
+          "hover:bg-violet-500 hover:brightness-105 active:brightness-95 disabled:opacity-60 motion-reduce:hover:brightness-100 motion-reduce:active:brightness-100",
         )}
       >
         {busy ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden />
+          <Loader2 className={compact ? "size-3.5 animate-spin" : "size-4 animate-spin"} aria-hidden />
         ) : (
-          <Download className="size-4" aria-hidden />
+          <Download className={compact ? "size-3.5" : "size-4"} aria-hidden />
         )}
         Export PDF
       </button>
       <button
         type="button"
         onClick={printCv}
-        className={cn(
-          motionInteractive,
-          "inline-flex items-center gap-2 rounded-lg border border-slate-200/90 bg-white px-4 py-2.5 text-base font-medium text-slate-800 shadow-xs hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
-        )}
+        className={cn(motionInteractive, secondary)}
       >
-        <Printer className="size-4" aria-hidden />
+        <Printer className={compact ? "size-3.5" : "size-4"} aria-hidden />
         Print
       </button>
       {err && (
-        <p id="export-pdf-error" className="text-base text-red-600 dark:text-red-400" role="alert">
+        <p
+          id="export-pdf-error"
+          className={cn(
+            "w-full text-red-600 dark:text-red-400",
+            compact ? "text-sm" : "text-base",
+          )}
+          role="alert"
+        >
           {err}
         </p>
       )}

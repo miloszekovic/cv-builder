@@ -5,8 +5,6 @@ import {
   BookOpen,
   Copy,
   FileJson,
-  PanelLeft,
-  PanelRight,
   Plus,
   Save,
   Trash2,
@@ -19,7 +17,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode, RefObject } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
 import { CVForm } from "@/components/CVForm";
 import { CVPreview } from "@/components/CVPreview";
 import { CVPrint } from "@/components/print/CVPrint";
@@ -29,9 +27,10 @@ import { blankCvData, exampleCvData, withDefaultMetaAccent } from "@/lib/default
 import { localCvStorage } from "@/lib/storage";
 import type { GenerateCvInput } from "@/lib/openai";
 import { cn } from "@/lib/cn";
-import { formSelectClass } from "@/lib/form-styles";
+import { formFieldClass, formSelectClass } from "@/lib/form-styles";
 import { motionInteractive } from "@/lib/motion-styles";
 import { ThemeSelect } from "@/components/ThemeSelect";
+import { CVBuilderMark, CVBuilderWordmark } from "@/components/CVBuilderLogo";
 
 export function CVBuilder() {
   const [hydrated, setHydrated] = useState(false);
@@ -60,8 +59,19 @@ export function CVBuilder() {
   const loadVersionIntoForm = useCallback(
     (id: string) => {
       const cv = localCvStorage.getCv(id);
-      if (cv) form.reset(withDefaultMetaAccent(cv));
-      else form.reset(blankCvData());
+      const listName = localCvStorage.listVersions().find((v) => v.id === id)?.name;
+      if (cv) {
+        const displayName = cv.meta.versionName?.trim() || listName;
+        form.reset(
+          withDefaultMetaAccent({
+            ...cv,
+            meta: {
+              ...cv.meta,
+              ...(displayName ? { versionName: displayName } : {}),
+            },
+          }),
+        );
+      } else form.reset(blankCvData());
       const lib = localCvStorage.getSkillLibrary();
       setSkillLibraryState(lib);
     },
@@ -134,20 +144,22 @@ export function CVBuilder() {
   if (!hydrated || !activeId || !skillLibraryResolved) {
     return (
       <div
-        className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-base text-slate-500 dark:text-slate-400"
+        className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-base text-zinc-500 dark:text-zinc-400"
         role="status"
         aria-live="polite"
         aria-busy="true"
       >
-        <span className="loading-dots font-medium tracking-tight">Loading</span>
-        <span className="text-sm opacity-70">Preparing your workspace…</span>
+        <span className="loading-dots font-medium tracking-tight text-zinc-700 dark:text-zinc-300">
+          Loading
+        </span>
+        <span className="text-sm text-zinc-500/90 dark:text-zinc-500">Preparing your workspace…</span>
       </div>
     );
   }
 
   return (
     <FormProvider {...form}>
-      <div className="print:hidden app-shell-enter mx-auto w-full px-4 py-8 sm:px-8 md:px-10 lg:px-14 lg:py-10 xl:px-16 2xl:px-20">
+      <div className="print:hidden app-shell-enter mx-auto w-full max-w-[1920px] px-4 py-10 sm:px-8 sm:py-12 md:px-12 lg:px-16 lg:py-14 xl:px-20 2xl:px-24">
         <nav aria-label="Workspace" className="contents">
           <Toolbar
             activeId={activeId}
@@ -217,48 +229,28 @@ export function CVBuilder() {
               localCvStorage.saveCv(activeId, parsed.cv);
               setVersions(localCvStorage.listVersions());
             }}
-            sidebarPosition={cvSnapshot.meta.sidebarPosition}
-            onToggleSidebar={() => {
-              const next =
-                cvSnapshot.meta.sidebarPosition === "right" ? "left" : "right";
-              form.setValue("meta.sidebarPosition", next, { shouldDirty: true });
-            }}
             themeSelect={<ThemeSelect embedded />}
             onLoadExample={() => {
               if (
-                !window.confirm(
-                  "Replace current CV with the full demo (all fields filled for showcase)? Duplicate the version first if you want to keep what you have.",
-                )
+                !                window.confirm("Replace this CV with the demo? Duplicate the version first to keep it.")
               ) {
                 return;
               }
               const ex = exampleCvData();
               form.reset(withDefaultMetaAccent(ex));
             }}
+            tagline="Edit, preview, and export a concise CV. All fields are optional."
+            getCv={() => form.getValues()}
           />
         </nav>
 
         <main
           id="main-content"
           tabIndex={-1}
-          className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950"
+          className="outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
-          <header className="mb-8 flex flex-col gap-5 border-b border-slate-200/90 pb-8 dark:border-slate-700/80 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-4xl">
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-              CV Builder
-            </h1>
-            <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-400">
-              Edit, preview, and export a concise two-page CV. All fields are optional.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <ExportButton getCv={() => form.getValues()} />
-          </div>
-        </header>
-
-        <div className="grid gap-10 lg:grid-cols-[minmax(640px,1fr)_minmax(560px,720px)] lg:gap-14 xl:grid-cols-[minmax(720px,1fr)_minmax(600px,800px)]">
-          <section aria-label="CV fields" className="min-w-0 space-y-8">
+        <div className="grid gap-12 lg:grid-cols-[minmax(640px,1fr)_minmax(560px,720px)] lg:gap-16 xl:grid-cols-[minmax(720px,1fr)_minmax(600px,800px)] xl:gap-20">
+          <section aria-label="CV fields" className="min-w-0 space-y-10">
             <form onSubmit={(e) => e.preventDefault()} noValidate>
               <CVForm
                 mode={mode}
@@ -273,15 +265,18 @@ export function CVBuilder() {
           </section>
           <aside
             aria-labelledby="live-preview-heading"
-            className="min-h-0 min-w-0 space-y-4 lg:sticky lg:top-8 lg:self-start"
+            className="flex min-h-0 min-w-0 flex-col gap-5 lg:sticky lg:top-10 lg:self-start"
           >
             <h2
               id="live-preview-heading"
-              className="text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-300"
+              className="m-0 shrink-0 border-b border-zinc-100 pb-3 text-xl font-semibold tracking-tight text-zinc-900 dark:border-zinc-800/90 dark:text-zinc-50"
             >
               Live preview
             </h2>
-            <CVPreview cv={cvSnapshot} className="max-h-[calc(100vh-8rem)]" />
+            <CVPreview
+              cv={cvSnapshot}
+              className="min-h-0 w-full max-h-[calc(100vh-5.5rem)]"
+            />
           </aside>
         </div>
         </main>
@@ -306,10 +301,10 @@ function Toolbar({
   onImportJsonClick,
   importRef,
   onImportFile,
-  sidebarPosition,
-  onToggleSidebar,
   themeSelect,
   onLoadExample,
+  tagline,
+  getCv,
 }: {
   activeId: string;
   versions: { id: string; name: string; updatedAt: string }[];
@@ -322,24 +317,49 @@ function Toolbar({
   onImportJsonClick: () => void;
   importRef: RefObject<HTMLInputElement | null>;
   onImportFile: (f: File) => void;
-  sidebarPosition: CVData["meta"]["sidebarPosition"];
-  onToggleSidebar: () => void;
   themeSelect: ReactNode;
   onLoadExample: () => void;
+  tagline: string;
+  getCv: () => CVData;
 }) {
+  const { register } = useFormContext<CVData>();
   const jsonIoBtnClass = cn(
     motionInteractive,
-    "inline-flex items-center gap-1.5 rounded-lg border border-amber-200/90 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-950 shadow-xs hover:bg-amber-100/90 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100 dark:hover:bg-amber-900/40",
+    "inline-flex items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3.5 py-2.5 text-sm font-medium text-amber-950 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-amber-100/90 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-950/50",
   );
 
   return (
-    <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-950/3 dark:border-slate-700/90 dark:bg-slate-900/80 dark:ring-white/4 sm:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
+    <div className="mb-10 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
+      <div
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-x-6"
+        role="group"
+        aria-label="About this app"
+      >
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <h1 className="m-0 flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <CVBuilderMark />
+            <CVBuilderWordmark />
+          </h1>
+          <p className="m-0 min-w-0 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            {tagline}
+          </p>
+        </div>
         <div
-          className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/95 p-1.5 dark:border-slate-600/90 dark:bg-slate-800/75"
+          className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40 sm:self-start"
           role="group"
-          aria-label="CV versions"
+          aria-label="Theme"
         >
+          {themeSelect}
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/70 lg:flex-row lg:items-center lg:justify-between lg:gap-x-6">
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-1 lg:flex-row lg:flex-wrap lg:items-center">
+          <div
+            className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/90 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/50"
+            role="group"
+            aria-label="CV versions"
+          >
           <label
             htmlFor="cv-version-select"
             className="sr-only text-xs font-medium text-slate-600 dark:text-slate-400"
@@ -361,12 +381,31 @@ function Toolbar({
               </option>
             ))}
           </select>
+          <label
+            htmlFor="cv-version-name"
+            className="flex min-w-0 flex-col gap-0.5 sm:max-w-[min(100%,15rem)] sm:flex-1 sm:flex-row sm:items-center sm:gap-2"
+          >
+            <span className="shrink-0 text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              CV name
+            </span>
+            <input
+              id="cv-version-name"
+              {...register("meta.versionName")}
+              type="text"
+              autoComplete="off"
+              placeholder="Untitled"
+              className={cn(
+                formFieldClass,
+                "min-h-10 w-full min-w-0 py-2 text-sm sm:max-w-56",
+              )}
+            />
+          </label>
           <button
             type="button"
             onClick={onNewVersion}
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/90 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900 shadow-xs hover:bg-emerald-100/90 dark:border-emerald-800/70 dark:bg-emerald-950/45 dark:text-emerald-100 dark:hover:bg-emerald-900/50",
+              "inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3.5 py-2.5 text-sm font-medium text-emerald-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-emerald-100/90 dark:border-emerald-900/45 dark:bg-emerald-950/35 dark:text-emerald-100 dark:hover:bg-emerald-950/55",
             )}
             title="Create a new blank CV version"
             aria-label="Create a new blank CV version"
@@ -379,7 +418,7 @@ function Toolbar({
             onClick={onDuplicate}
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1.5 rounded-lg border border-violet-200/90 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-900 shadow-xs hover:bg-violet-100/90 dark:border-violet-800/70 dark:bg-violet-950/45 dark:text-violet-100 dark:hover:bg-violet-900/50",
+              "inline-flex items-center gap-2 rounded-xl border border-violet-200/80 bg-violet-50/95 px-3.5 py-2.5 text-sm font-medium text-violet-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
             )}
             title="Duplicate the current version"
             aria-label="Duplicate the current version"
@@ -392,7 +431,7 @@ function Toolbar({
             onClick={onDelete}
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1.5 rounded-lg border border-red-200/90 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 shadow-xs hover:bg-red-100/80 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/55",
+              "inline-flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/95 px-3.5 py-2.5 text-sm font-medium text-red-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-red-100/85 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200 dark:hover:bg-red-950/50",
             )}
             title="Delete this CV version"
             aria-label="Delete this CV version"
@@ -405,7 +444,7 @@ function Toolbar({
             onClick={onSave}
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500",
+              "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 motion-safe:active:scale-[0.99] dark:bg-violet-600 dark:hover:bg-violet-500",
             )}
             title="Save now to local storage"
             aria-label="Save now to local storage"
@@ -413,10 +452,10 @@ function Toolbar({
             <Save className="size-4 shrink-0" aria-hidden />
             Save
           </button>
-        </div>
+          </div>
 
         <div
-          className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-1.5 dark:border-slate-600/90 dark:bg-slate-800/50"
+          className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
           role="group"
           aria-label="Import and export"
         >
@@ -457,7 +496,7 @@ function Toolbar({
             onClick={onLoadExample}
             className={cn(
               motionInteractive,
-              "inline-flex items-center gap-1.5 rounded-lg border border-dashed border-orange-300/90 bg-orange-50/90 px-3 py-2 text-sm font-medium text-orange-900 hover:bg-orange-100/80 dark:border-orange-700/70 dark:bg-orange-950/30 dark:text-orange-100 dark:hover:bg-orange-950/45",
+              "inline-flex items-center gap-2 rounded-xl border border-dashed border-orange-300/90 bg-orange-50/95 px-3.5 py-2.5 text-sm font-medium text-orange-900 hover:bg-orange-100/85 dark:border-orange-800/55 dark:bg-orange-950/25 dark:text-orange-100 dark:hover:bg-orange-950/45",
             )}
             title="Load the built-in demo CV (overwrites current fields)"
             aria-label="Load the built-in demo CV (overwrites current fields)"
@@ -466,42 +505,10 @@ function Toolbar({
             Load demo
           </button>
         </div>
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <div
-            className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-1.5 dark:border-slate-600/90 dark:bg-slate-800/50"
-            role="group"
-            aria-label="Theme"
-          >
-            {themeSelect}
-          </div>
-          <div
-            className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-1.5 dark:border-slate-600/90 dark:bg-slate-800/50"
-            role="group"
-            aria-label="Sidebar column"
-          >
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className={cn(
-                motionInteractive,
-                "inline-flex items-center gap-1.5 rounded-lg border border-indigo-200/90 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-900 shadow-xs hover:bg-indigo-100/90 dark:border-indigo-800/70 dark:bg-indigo-950/40 dark:text-indigo-100 dark:hover:bg-indigo-900/45",
-              )}
-              title="Toggle sidebar column (left or right)"
-              aria-label={
-                sidebarPosition === "right"
-                  ? "Sidebar is on the right. Activate to move it to the left."
-                  : "Sidebar is on the left. Activate to move it to the right."
-              }
-            >
-              {sidebarPosition === "right" ? (
-                <PanelRight className="size-4 shrink-0" aria-hidden />
-              ) : (
-                <PanelLeft className="size-4 shrink-0" aria-hidden />
-              )}
-              Sidebar: {sidebarPosition}
-            </button>
-          </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 lg:justify-end">
+          <ExportButton getCv={getCv} compact />
         </div>
       </div>
     </div>

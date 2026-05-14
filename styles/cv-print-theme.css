@@ -40,13 +40,27 @@
   page-break-after: avoid;
 }
 
-.cv-print-job {
-  break-inside: avoid;
+/* One job = one fragment; moves to next page if it does not fit at bottom. */
+.cv-print-experience-group {
+  margin-bottom: var(--cv-print-rhythm);
+}
+
+.cv-print-experience-item {
+  break-inside: avoid-page;
   page-break-inside: avoid;
 }
 
+.cv-print-job {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.cv-print-column-main .cv-print-experience-group:last-child {
+  margin-bottom: 0;
+}
+
 .cv-print-sidebar-section {
-  break-inside: avoid;
+  break-inside: avoid-page;
   page-break-inside: avoid;
 }
 
@@ -57,19 +71,33 @@
 
 .cv-print-skill-category,
 .cv-print-edu-entry {
-  break-inside: avoid;
+  break-inside: avoid-page;
   page-break-inside: avoid;
 }
 
 .cv-print-job li {
-  break-inside: avoid;
+  break-inside: avoid-page;
   page-break-inside: avoid;
 }
 
+/* PROFILE (and any other main blocks using this class) stay on one page when they fit. */
 .cv-print-main-section {
   margin-bottom: var(--cv-print-rhythm);
+  break-inside: avoid-page;
+  page-break-inside: avoid;
 }
 
 .cv-print-main-section:last-child {
   margin-bottom: 0;
+}
+
+.cv-print-page-header {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+/* Allow each column to paginate; do not glue entire sidebar to one page. */
+.cv-print-column-main,
+.cv-print-column-sidebar {
+  min-height: 0;
 }
