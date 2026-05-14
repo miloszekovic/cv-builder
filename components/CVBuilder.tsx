@@ -2,7 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AlertTriangle,
   BookOpen,
+  CheckCircle2,
   Copy,
   FileJson,
   Plus,
@@ -15,15 +17,23 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
+  type TransitionEvent,
 } from "react";
-import type { ReactNode, RefObject } from "react";
+import type { RefObject } from "react";
+import { createPortal, flushSync } from "react-dom";
 import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
 import { CVForm } from "@/components/CVForm";
 import { CVPreview } from "@/components/CVPreview";
 import { CVPrint } from "@/components/print/CVPrint";
 import { ExportButton } from "@/components/ExportButton";
 import { cvDataSchema, type CVData, type SkillLibrary } from "@/lib/cv-schema";
-import { blankCvData, exampleCvData, withDefaultMetaAccent } from "@/lib/default-cv-data";
+import {
+  blankCvData,
+  exampleCvData,
+  normalizeCvForForm,
+  withDefaultMetaAccent,
+} from "@/lib/default-cv-data";
 import { localCvStorage } from "@/lib/storage";
 import type { GenerateCvInput } from "@/lib/openai";
 import { cn } from "@/lib/cn";
@@ -46,6 +56,10 @@ export function CVBuilder() {
   const [mode, setMode] = useState<"manual" | "ai">("manual");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [deleteVersionOpen, setDeleteVersionOpen] = useState(false);
+  const [loadDemoOpen, setLoadDemoOpen] = useState(false);
+  const [saveFeedbackVisible, setSaveFeedbackVisible] = useState(false);
+  const saveFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CVData>({
@@ -61,12 +75,13 @@ export function CVBuilder() {
       const cv = localCvStorage.getCv(id);
       const listName = localCvStorage.listVersions().find((v) => v.id === id)?.name;
       if (cv) {
-        const displayName = cv.meta.versionName?.trim() || listName;
+        const normalized = normalizeCvForForm(cv);
+        const displayName = normalized.meta.versionName?.trim() || listName;
         form.reset(
           withDefaultMetaAccent({
-            ...cv,
+            ...normalized,
             meta: {
-              ...cv.meta,
+              ...normalized.meta,
               ...(displayName ? { versionName: displayName } : {}),
             },
           }),
@@ -99,6 +114,8 @@ export function CVBuilder() {
   useEffect(() => {
     if (!hydrated || !activeId) return;
     const t = window.setTimeout(() => {
+      if (localCvStorage.getActiveVersionId() !== activeId) return;
+      if (!localCvStorage.getCv(activeId)) return;
       const v = form.getValues();
       localCvStorage.saveCv(activeId, v);
       setVersions(localCvStorage.listVersions());
@@ -106,6 +123,53 @@ export function CVBuilder() {
     }, 450);
     return () => window.clearTimeout(t);
   }, [cvSnapshot, hydrated, activeId, form, skillLibraryState]);
+
+  const dismissSaveFeedback = useCallback(() => {
+    setSaveFeedbackVisible(false);
+    if (saveFeedbackTimerRef.current) {
+      clearTimeout(saveFeedbackTimerRef.current);
+      saveFeedbackTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const modalOpen = deleteVersionOpen || loadDemoOpen || saveFeedbackVisible;
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDeleteVersionOpen(false);
+        setLoadDemoOpen(false);
+        dismissSaveFeedback();
+      }
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [deleteVersionOpen, loadDemoOpen, saveFeedbackVisible, dismissSaveFeedback]);
+
+  useEffect(() => {
+    return () => {
+      if (saveFeedbackTimerRef.current) clearTimeout(saveFeedbackTimerRef.current);
+    };
+  }, []);
+
+  const handleManualSave = useCallback(() => {
+    if (!activeId) return;
+    const v = form.getValues();
+    localCvStorage.saveCv(activeId, v);
+    if (skillLibraryState) localCvStorage.setSkillLibrary(skillLibraryState);
+    setVersions(localCvStorage.listVersions());
+    setSaveFeedbackVisible(true);
+    if (saveFeedbackTimerRef.current) clearTimeout(saveFeedbackTimerRef.current);
+    saveFeedbackTimerRef.current = setTimeout(() => {
+      dismissSaveFeedback();
+    }, 2200);
+  }, [activeId, dismissSaveFeedback, form, skillLibraryState]);
 
   const onSkillLibraryChange = useCallback((lib: SkillLibrary) => {
     setSkillLibraryState(lib);
@@ -131,7 +195,7 @@ export function CVBuilder() {
         return;
       }
       if (data.cv) {
-        form.reset(withDefaultMetaAccent(data.cv));
+        form.reset(withDefaultMetaAccent(normalizeCvForForm(data.cv)));
         setMode("manual");
       }
     } catch {
@@ -183,24 +247,8 @@ export function CVBuilder() {
                 loadVersionIntoForm(m.id);
               }
             }}
-            onDelete={() => {
-              if (!window.confirm("Delete this CV version? This cannot be undone.")) return;
-              localCvStorage.deleteVersion(activeId);
-              const list = localCvStorage.listVersions();
-              setVersions(list);
-              const next = list[0]?.id ?? null;
-              setActiveId(next);
-              if (next) {
-                localCvStorage.setActiveVersionId(next);
-                loadVersionIntoForm(next);
-              }
-            }}
-            onSave={() => {
-              const v = form.getValues();
-              localCvStorage.saveCv(activeId, v);
-              if (skillLibraryState) localCvStorage.setSkillLibrary(skillLibraryState);
-              setVersions(localCvStorage.listVersions());
-            }}
+            onDeleteRequest={() => setDeleteVersionOpen(true)}
+            onSave={handleManualSave}
             onExportJson={() => {
               const blob = new Blob([localCvStorage.exportJson(activeId)], {
                 type: "application/json",
@@ -225,20 +273,12 @@ export function CVBuilder() {
                 localCvStorage.setSkillLibrary(parsed.skillLibrary);
                 setSkillLibraryState(parsed.skillLibrary);
               }
-              form.reset(withDefaultMetaAccent(parsed.cv));
+              form.reset(withDefaultMetaAccent(normalizeCvForForm(parsed.cv)));
               localCvStorage.saveCv(activeId, parsed.cv);
               setVersions(localCvStorage.listVersions());
             }}
             themeSelect={<ThemeSelect embedded />}
-            onLoadExample={() => {
-              if (
-                !                window.confirm("Replace this CV with the demo? Duplicate the version first to keep it.")
-              ) {
-                return;
-              }
-              const ex = exampleCvData();
-              form.reset(withDefaultMetaAccent(ex));
-            }}
+            onLoadExample={() => setLoadDemoOpen(true)}
             tagline="Edit, preview, and export a concise CV. All fields are optional."
             getCv={() => form.getValues()}
           />
@@ -285,7 +325,335 @@ export function CVBuilder() {
       <div className="hidden print:block bg-white">
         <CVPrint cv={cvSnapshot} />
       </div>
+
+      {typeof document !== "undefined" &&
+        createPortal(
+          <DeleteVersionModal
+            open={deleteVersionOpen}
+            versionName={
+              versions.find((v) => v.id === activeId)?.name?.trim() || "Untitled"
+            }
+            onDismiss={() => setDeleteVersionOpen(false)}
+            onConfirm={() => {
+              if (!activeId) return;
+              localCvStorage.deleteVersion(activeId);
+              const list = localCvStorage.listVersions();
+              const next = localCvStorage.getActiveVersionId();
+              flushSync(() => {
+                setVersions(list);
+                setActiveId(next);
+              });
+              if (next) {
+                loadVersionIntoForm(next);
+              } else {
+                form.reset(blankCvData());
+                setSkillLibraryState(localCvStorage.getSkillLibrary());
+              }
+              setDeleteVersionOpen(false);
+            }}
+          />,
+          document.body,
+        )}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <LoadDemoModal
+            open={loadDemoOpen}
+            onDismiss={() => setLoadDemoOpen(false)}
+            onConfirm={() => {
+              form.reset(
+                withDefaultMetaAccent(normalizeCvForForm(exampleCvData())),
+              );
+              setLoadDemoOpen(false);
+            }}
+          />,
+          document.body,
+        )}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <SaveFeedbackModal
+            open={saveFeedbackVisible}
+            onDismiss={dismissSaveFeedback}
+          />,
+          document.body,
+        )}
     </FormProvider>
+  );
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Fade in/out; parent toggles `open` — shell stays mounted until opacity exit ends. */
+function ModalFadeShell({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      if (prefersReducedMotion()) {
+        setVisible(true);
+        return;
+      }
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+
+    if (prefersReducedMotion()) {
+      setVisible(false);
+      setMounted(false);
+      return;
+    }
+    setVisible(false);
+  }, [open]);
+
+  const onTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
+    if (e.propertyName !== "opacity" || e.target !== e.currentTarget) return;
+    if (!open) setMounted(false);
+  };
+
+  if (!mounted) return null;
+
+  return (
+    <div
+      role="presentation"
+      onTransitionEnd={onTransitionEnd}
+      className={cn(
+        "fixed inset-0 z-200 flex items-end justify-center p-4 sm:items-center sm:p-6",
+        "ease-out motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SaveFeedbackModal({
+  open,
+  onDismiss,
+}: {
+  open: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <ModalFadeShell open={open}>
+      <button
+        type="button"
+        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
+        onClick={onDismiss}
+        aria-label="Close"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-feedback-title"
+        className={cn(
+          "relative z-10 w-full max-w-md origin-bottom sm:origin-center",
+          "rounded-3xl border border-zinc-200/90 bg-white/95 p-6 shadow-[0_24px_64px_-12px_rgb(0_0_0_/0.28),0_0_0_1px_rgb(255_255_255_/0.8)_inset] ring-1 ring-zinc-950/5 backdrop-blur-xl dark:border-zinc-600/80 dark:bg-zinc-900/95 dark:shadow-[0_24px_64px_-8px_rgb(0_0_0_/0.55)] dark:ring-white/10 sm:p-7",
+        )}
+      >
+        <div className="flex flex-col gap-5">
+          <div className="flex gap-4">
+            <div
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500/15 to-emerald-600/10 text-emerald-600 dark:from-emerald-500/25 dark:to-emerald-950/40 dark:text-emerald-400"
+              aria-hidden
+            >
+              <CheckCircle2 className="size-6" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 space-y-2 pt-0.5">
+              <h2
+                id="save-feedback-title"
+                className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+              >
+                Saved locally
+              </h2>
+              <p className="text-[0.9375rem] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                Your CV and skill library are stored in this browser (local storage).
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end border-t border-zinc-100 pt-4 dark:border-zinc-800/90">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className={cn(
+                motionInteractive,
+                "rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500",
+              )}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalFadeShell>
+  );
+}
+
+function LoadDemoModal({
+  open,
+  onDismiss,
+  onConfirm,
+}: {
+  open: boolean;
+  onDismiss: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <ModalFadeShell open={open}>
+      <button
+        type="button"
+        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
+        onClick={onDismiss}
+        aria-label="Close"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="load-demo-title"
+        className={cn(
+          "relative z-10 w-full max-w-104 origin-bottom sm:origin-center",
+          "rounded-3xl border border-zinc-200/90 bg-white/95 p-6 shadow-[0_24px_64px_-12px_rgb(0_0_0_/0.28),0_0_0_1px_rgb(255_255_255_/0.8)_inset] ring-1 ring-zinc-950/5 backdrop-blur-xl dark:border-zinc-600/80 dark:bg-zinc-900/95 dark:shadow-[0_24px_64px_-8px_rgb(0_0_0_/0.55)] dark:ring-white/10 sm:p-8",
+        )}
+      >
+        <div className="flex flex-col gap-6">
+          <div className="flex gap-4">
+            <div
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/15 to-violet-600/10 text-violet-600 dark:from-violet-500/25 dark:to-violet-950/40 dark:text-violet-400"
+              aria-hidden
+            >
+              <BookOpen className="size-6" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 space-y-2 pt-0.5">
+              <h2
+                id="load-demo-title"
+                className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+              >
+                Load demo CV?
+              </h2>
+              <p className="text-[0.9375rem] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                This replaces the fields in your current version with sample content.
+                Duplicate the version first if you want to keep what you have.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className={cn(
+                motionInteractive,
+                "w-full rounded-xl border border-zinc-200/90 bg-zinc-50/90 px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100/90 sm:w-auto dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/90",
+              )}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={cn(
+                motionInteractive,
+                "w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_-3px_rgb(124_58_237_/0.45)] hover:bg-violet-500 sm:w-auto dark:bg-violet-600 dark:hover:bg-violet-500",
+              )}
+            >
+              Load demo
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalFadeShell>
+  );
+}
+
+function DeleteVersionModal({
+  open,
+  versionName,
+  onDismiss,
+  onConfirm,
+}: {
+  open: boolean;
+  versionName: string;
+  onDismiss: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <ModalFadeShell open={open}>
+      <button
+        type="button"
+        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
+        onClick={onDismiss}
+        aria-label="Close"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-version-title"
+        className={cn(
+          "relative z-10 w-full max-w-104 origin-bottom sm:origin-center",
+          "rounded-3xl border border-zinc-200/90 bg-white/95 p-6 shadow-[0_24px_64px_-12px_rgb(0_0_0_/0.28),0_0_0_1px_rgb(255_255_255_/0.8)_inset] ring-1 ring-zinc-950/5 backdrop-blur-xl dark:border-zinc-600/80 dark:bg-zinc-900/95 dark:shadow-[0_24px_64px_-8px_rgb(0_0_0_/0.55)] dark:ring-white/10 sm:p-8",
+        )}
+      >
+        <div className="flex flex-col gap-6">
+          <div className="flex gap-4">
+            <div
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-red-500/15 to-red-600/10 text-red-600 dark:from-red-500/25 dark:to-red-950/40 dark:text-red-400"
+              aria-hidden
+            >
+              <AlertTriangle className="size-6" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 space-y-2 pt-0.5">
+              <h2
+                id="delete-version-title"
+                className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+              >
+                Delete this version?
+              </h2>
+              <p className="text-[0.9375rem] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  “{versionName}”
+                </span>{" "}
+                will be removed from this browser. You cannot undo this.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className={cn(
+                motionInteractive,
+                "w-full rounded-xl border border-zinc-200/90 bg-zinc-50/90 px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100/90 sm:w-auto dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/90",
+              )}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={cn(
+                motionInteractive,
+                "w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_-3px_rgb(220_38_38_/0.45)] hover:bg-red-500 sm:w-auto dark:bg-red-600 dark:hover:bg-red-500",
+              )}
+            >
+              Delete version
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalFadeShell>
   );
 }
 
@@ -295,7 +663,7 @@ function Toolbar({
   onSelectVersion,
   onNewVersion,
   onDuplicate,
-  onDelete,
+  onDeleteRequest,
   onSave,
   onExportJson,
   onImportJsonClick,
@@ -311,7 +679,7 @@ function Toolbar({
   onSelectVersion: (id: string) => void;
   onNewVersion: () => void;
   onDuplicate: () => void;
-  onDelete: () => void;
+  onDeleteRequest: () => void;
   onSave: () => void;
   onExportJson: () => void;
   onImportJsonClick: () => void;
@@ -329,7 +697,7 @@ function Toolbar({
   );
 
   return (
-    <div className="mb-10 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
+    <div className="mb-6 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
       <div
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-x-6"
         role="group"
@@ -354,9 +722,9 @@ function Toolbar({
       </div>
 
       <div className="mt-5 flex flex-col gap-4 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/70 lg:flex-row lg:items-center lg:justify-between lg:gap-x-6">
-        <div className="flex min-w-0 flex-col gap-3 lg:flex-1 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="flex min-w-0 flex-col gap-3 items-start lg:flex-row lg:flex-wrap lg:items-center">
           <div
-            className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/90 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/50"
+            className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/90 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/50"
             role="group"
             aria-label="CV versions"
           >
@@ -383,7 +751,7 @@ function Toolbar({
           </select>
           <label
             htmlFor="cv-version-name"
-            className="flex min-w-0 flex-col gap-0.5 sm:max-w-[min(100%,15rem)] sm:flex-1 sm:flex-row sm:items-center sm:gap-2"
+            className="flex min-w-0 flex-col gap-0.5 sm:max-w-[min(100%,15rem)] sm:flex-row sm:items-center sm:gap-2"
           >
             <span className="shrink-0 text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               CV name
@@ -428,13 +796,13 @@ function Toolbar({
           </button>
           <button
             type="button"
-            onClick={onDelete}
+            onClick={onDeleteRequest}
             className={cn(
               motionInteractive,
               "inline-flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/95 px-3.5 py-2.5 text-sm font-medium text-red-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-red-100/85 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200 dark:hover:bg-red-950/50",
             )}
-            title="Delete this CV version"
-            aria-label="Delete this CV version"
+            title="Remove this version from this browser"
+            aria-label="Delete this CV version. Opens a confirmation dialog."
           >
             <Trash2 className="size-4 shrink-0" aria-hidden />
             Delete
@@ -446,8 +814,8 @@ function Toolbar({
               motionInteractive,
               "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 motion-safe:active:scale-[0.99] dark:bg-violet-600 dark:hover:bg-violet-500",
             )}
-            title="Save now to local storage"
-            aria-label="Save now to local storage"
+            title="Save to this browser now (local storage)"
+            aria-label="Save CV and skill library to local storage now"
           >
             <Save className="size-4 shrink-0" aria-hidden />
             Save
@@ -455,7 +823,7 @@ function Toolbar({
           </div>
 
         <div
-          className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
+          className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
           role="group"
           aria-label="Import and export"
         >

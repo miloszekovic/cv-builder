@@ -198,7 +198,11 @@ export const localCvStorage: CvStoragePort = {
     writeVersions(versions);
     const active = this.getActiveVersionId();
     if (active === versionId) {
-      this.setActiveVersionId(versions[0].id);
+      const sorted = [...versions].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
+      const pick = sorted[0];
+      if (pick) this.setActiveVersionId(pick.id);
     }
   },
 

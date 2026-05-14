@@ -1,4 +1,9 @@
-import type { CVData, SkillCategoryId, SkillLibrary } from "./cv-schema";
+import type {
+  CVData,
+  ExperienceItem,
+  SkillCategoryId,
+  SkillLibrary,
+} from "./cv-schema";
 import { SKILL_CATEGORY_LABELS } from "./cv-schema";
 
 /** Ensures `meta.accent` is set when binding accent radios in the form. */
@@ -123,23 +128,77 @@ export function emptySkillSelections(): NonNullable<CVData["sidebar"]["skills"]>
 export const blankCvData = (): CVData => {
   return {
     meta: {
+      versionName: "",
+      targetRole: "",
       sidebarPosition: "right",
       accent: "teal",
     },
     body: {
+      name: "",
+      mainRole: "",
+      profile: "",
+      image: "",
       experience: [],
       photoMode: "none",
     },
     sidebar: {
-      details: {},
+      details: {
+        location: "",
+        email: "",
+        phone: "",
+        website: "",
+        linkedIn: "",
+        gitHub: "",
+      },
       skills: emptySkillSelections(),
       education: [],
       certificates: [],
       languages: [],
       hobbies: [],
+      hobbiesText: "",
     },
   };
 };
+
+function normalizeExperienceRow(row: ExperienceItem): ExperienceItem {
+  const bullets =
+    row.bullets && row.bullets.length > 0 ? [...row.bullets] : [""];
+  return {
+    role: row.role ?? "",
+    company: row.company ?? "",
+    startYear: row.startYear,
+    endYear: row.endYear,
+    intro: row.intro ?? "",
+    bullets,
+    outro: row.outro ?? "",
+  };
+}
+
+/**
+ * Merges saved CV data with blank defaults so every registered field has a defined
+ * value (usually ""). Otherwise react-hook-form can re-read stale DOM after reset.
+ */
+export function normalizeCvForForm(cv: CVData): CVData {
+  const b = blankCvData();
+  const experience = cv.body?.experience?.length
+    ? cv.body.experience.map(normalizeExperienceRow)
+    : b.body.experience;
+  return {
+    meta: { ...b.meta, ...cv.meta },
+    body: { ...b.body, ...cv.body, experience },
+    sidebar: {
+      ...b.sidebar,
+      ...cv.sidebar,
+      details: { ...b.sidebar.details, ...cv.sidebar?.details },
+      education: cv.sidebar?.education ?? b.sidebar.education,
+      skills: cv.sidebar?.skills ?? b.sidebar.skills,
+      certificates: cv.sidebar?.certificates ?? b.sidebar.certificates,
+      languages: cv.sidebar?.languages ?? b.sidebar.languages,
+      hobbies: cv.sidebar?.hobbies ?? b.sidebar.hobbies,
+      hobbiesText: cv.sidebar?.hobbiesText ?? b.sidebar.hobbiesText,
+    },
+  };
+}
 
 /**
  * Full demo CV — every optional field filled for screenshots and PDF samples.
