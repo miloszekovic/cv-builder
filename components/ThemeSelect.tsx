@@ -58,7 +58,7 @@ export function ThemeSelect({ embedded = false }: ThemeSelectProps) {
         className={btn(theme === "dark", "dark")}
         onClick={() => set("dark")}
       >
-        <Moon className="size-[1.125rem] shrink-0" aria-hidden />
+        <Moon className="size-4.5 shrink-0" aria-hidden />
       </button>
       <button
         type="button"
@@ -67,7 +67,7 @@ export function ThemeSelect({ embedded = false }: ThemeSelectProps) {
         className={btn(theme === "light", "light")}
         onClick={() => set("light")}
       >
-        <Sun className="size-[1.125rem] shrink-0" aria-hidden />
+        <Sun className="size-4.5 shrink-0" aria-hidden />
       </button>
     </div>
   );

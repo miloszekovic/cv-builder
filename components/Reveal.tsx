@@ -69,7 +69,7 @@ export function Reveal({
         visible
           ? "translate-y-0 opacity-100"
           : "motion-safe:translate-y-5 motion-safe:opacity-0",
-        "motion-safe:transition-[opacity,transform] motion-safe:duration-[520ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "motion-safe:transition-[opacity,transform] motion-safe:duration-520 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
         className,
       )}
     >
