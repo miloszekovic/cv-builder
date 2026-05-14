@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
 import { chromium } from "playwright";
+import { getCvAccent } from "./cv-accents";
 import type { CVData } from "./cv-schema";
 
 export function loadPrintCss(): string {
@@ -40,12 +41,16 @@ export async function renderCvToPdfBuffer(cv: CVData): Promise<Buffer> {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle" });
     await page.emulateMedia({ media: "print" });
+    const accentHex = getCvAccent(cv.meta.accent).accent;
+    const footerTemplate = `<div style="width:100%;box-sizing:border-box;border-top:2px solid ${accentHex};padding:5px 12mm 0;display:flex;justify-content:flex-end;font-family:ui-sans-serif,system-ui,sans-serif,-apple-system,sans-serif;">
+<span style="font-size:8px;font-style:italic;font-weight:400;color:#94a3b8;letter-spacing:0.03em;line-height:1.25;">Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>
+</div>`;
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="width:100%;border-top:2px solid #0f766e;padding:6px 12mm 0;font-size:9px;color:#64748b;font-family:system-ui,sans-serif;text-align:right;">Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
+      footerTemplate,
       margin: { top: "12mm", bottom: "14mm", left: "12mm", right: "12mm" },
     });
     return Buffer.from(pdf);

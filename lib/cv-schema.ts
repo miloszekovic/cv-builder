@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CV_ACCENT_IDS } from "./cv-accents";
 
 export const skillCategoryIdSchema = z.enum([
   "frontEnd",
@@ -69,10 +70,13 @@ export const languageItemSchema = z.object({
 
 export type LanguageItem = z.infer<typeof languageItemSchema>;
 
+export const cvAccentIdSchema = z.enum(CV_ACCENT_IDS);
+
 export const metaSchema = z.object({
   versionName: z.string().optional(),
   targetRole: z.string().optional(),
   sidebarPosition: z.enum(["left", "right"]),
+  accent: cvAccentIdSchema.optional(),
 });
 
 export const photoModeSchema = z.enum(["image", "initials", "none"]);

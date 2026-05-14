@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Github,
   Globe,
@@ -7,6 +7,7 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
+import { getCvAccent } from "@/lib/cv-accents";
 import type { CVData, Details, ExperienceItem, SkillCategoryId } from "@/lib/cv-schema";
 import {
   effectivePhotoMode,
@@ -55,7 +56,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center gap-2 text-[10px] leading-snug text-slate-800">
-      <span className="flex shrink-0 items-center justify-center text-(--cv-print-accent) [&>svg]:size-3.5">
+      <span className="flex shrink-0 items-center justify-center text-(--cv-print-accent) [&>svg]:size-3">
         {icon}
       </span>
       <span className="min-w-0 wrap-break-word">{children}</span>
@@ -294,6 +295,7 @@ function SidebarColumn({
 }
 
 export function CVPrint({ cv }: { cv: CVData }) {
+  const accent = getCvAccent(cv.meta.accent);
   const sidebarLeft = cv.meta.sidebarPosition === "left";
   const d = cv.sidebar.details;
   const photoMode = effectivePhotoMode(cv.body);
@@ -313,7 +315,10 @@ export function CVPrint({ cv }: { cv: CVData }) {
       )}
       {photoMode === "initials" && hasText(cv.body.name) && (
         <div
-          className="flex size-[68px] shrink-0 items-center justify-center rounded-lg border border-slate-200/90 bg-linear-to-br from-teal-50 to-teal-100/90 text-[22px] font-bold text-(--cv-print-accent)"
+          className="flex size-[68px] shrink-0 items-center justify-center rounded-lg border border-slate-200/90 text-[22px] font-bold text-(--cv-print-accent)"
+          style={{
+            backgroundImage: `linear-gradient(to bottom right, ${accent.initialsFrom}, ${accent.initialsTo})`,
+          }}
           aria-hidden
         >
           {initialsFromName(cv.body.name)}
@@ -321,12 +326,12 @@ export function CVPrint({ cv }: { cv: CVData }) {
       )}
       <div className="min-w-0 flex-1">
         {hasText(cv.body.name) && (
-          <h1 className="cv-print-name m-0 text-[26px] font-bold leading-tight tracking-tight">
+          <h1 className="cv-print-name m-0 text-[28px] font-bold leading-tight tracking-tight">
             {cv.body.name}
           </h1>
         )}
         {hasText(cv.body.mainRole) && (
-          <p className="cv-print-subtitle mt-1 text-[11px] font-normal text-slate-600">
+          <p className="cv-print-subtitle mt-1 text-[14px] font-normal text-slate-600">
             {cv.body.mainRole}
           </p>
         )}
@@ -356,6 +361,7 @@ export function CVPrint({ cv }: { cv: CVData }) {
     <div
       data-cv-print-root
       className="cv-print-root bg-white text-slate-900 antialiased scheme-light"
+      style={{ "--cv-print-accent": accent.accent } as CSSProperties}
     >
       <div className="mx-auto w-[210mm] max-w-full min-h-[297mm] box-border px-[12mm] py-[11mm]">
         {header}

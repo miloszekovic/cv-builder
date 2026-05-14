@@ -6,6 +6,7 @@ import { useFormContext } from "react-hook-form";
 import type { CVData, SkillCategoryId, SkillLibrary } from "@/lib/cv-schema";
 import { SKILL_CATEGORY_LABELS } from "@/lib/cv-schema";
 import { formFieldClass, formLabelClass } from "@/lib/form-styles";
+import { motionInteractive } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
 
 const CATEGORY_ORDER: SkillCategoryId[] = [
@@ -115,7 +116,7 @@ function CategoryBlock({
   const [draft, setDraft] = useState("");
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/[0.03] dark:border-slate-700 dark:bg-slate-900 dark:ring-white/[0.04]">
+    <section className="motion-safe:transition-shadow motion-safe:duration-300 space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/3 motion-safe:hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-white/4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="text-base font-semibold text-slate-900 dark:text-slate-50">{label}</h4>
       </div>
@@ -131,7 +132,8 @@ function CategoryBlock({
               type="button"
               onClick={() => onToggleVisible(tag, !on)}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                motionInteractive,
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium",
                 on
                   ? "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-100"
                   : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500",
@@ -159,7 +161,10 @@ function CategoryBlock({
         />
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+          className={cn(
+            motionInteractive,
+            "inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500",
+          )}
           onClick={() => {
             onAddLibraryTag(draft);
             setDraft("");
@@ -175,7 +180,10 @@ function CategoryBlock({
           <button
             key={`rm-${tag}`}
             type="button"
-            className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-slate-600 dark:hover:bg-red-950/40 dark:hover:border-red-800 dark:hover:text-red-300"
+            className={cn(
+              motionInteractive,
+              "inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-sm hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-slate-600 dark:hover:bg-red-950/40 dark:hover:border-red-800 dark:hover:text-red-300",
+            )}
             onClick={() =>
               onLibraryTagsChange(libraryTags.filter((t) => t !== tag))
             }

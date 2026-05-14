@@ -3,8 +3,14 @@
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
-import { formFieldClass, formLabelClass } from "@/lib/form-styles";
+import { formFieldClass, formLabelClass, formSelectClass } from "@/lib/form-styles";
+import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
+
+const addExperienceButtonClass = cn(
+  motionInteractive,
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500",
+);
 
 const emptyExp = (): ExperienceItem => ({
   role: "",
@@ -25,14 +31,17 @@ export function ExperienceEditor() {
 
   if (fields.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200/90 bg-slate-50/80 px-6 py-12 text-center dark:border-slate-600 dark:bg-slate-900/50">
-        <p className="text-base text-slate-600 dark:text-slate-400">No experience entries yet.</p>
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          List jobs in reverse-chronological order. Each entry can include years, a short intro,
+          bullet achievements, and an optional closing line.
+        </p>
         <button
           type="button"
           onClick={() => append(emptyExp())}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-base font-medium text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+          className={addExperienceButtonClass}
         >
-          <Plus className="size-4" aria-hidden />
+          <Plus className="size-4 shrink-0 opacity-90" aria-hidden />
           Add experience
         </button>
       </div>
@@ -44,7 +53,7 @@ export function ExperienceEditor() {
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className="space-y-4 rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/[0.03] dark:border-slate-700 dark:bg-slate-900 dark:ring-white/[0.04]"
+          className="motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px space-y-4 rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/3 motion-safe:hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-white/4 dark:motion-safe:hover:shadow-black/25"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className={formLabelClass}>Role {index + 1}</span>
@@ -103,7 +112,7 @@ export function ExperienceEditor() {
                 control={control}
                 name={`body.experience.${index}.endYear`}
                 render={({ field }) => (
-                  <select className={formFieldClass}
+                  <select className={formSelectClass}
                     value={
                       field.value === "present"
                         ? "present"
@@ -146,7 +155,10 @@ export function ExperienceEditor() {
       <button
         type="button"
         onClick={() => append(emptyExp())}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-3 text-base font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
+        className={cn(
+          addExperienceButtonClass,
+          "w-full rounded-xl py-3 text-base",
+        )}
       >
         <Plus className="size-4" aria-hidden />
         Add experience
@@ -156,6 +168,10 @@ export function ExperienceEditor() {
 }
 
 function BulletsEditor({ index }: { index: number }) {
+  const addBulletClass = cn(
+    motionTextButton,
+    "text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300",
+  );
   const { control, register } = useFormContext<CVData>();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -184,7 +200,7 @@ function BulletsEditor({ index }: { index: number }) {
         ))}
         <button
           type="button"
-          className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          className={addBulletClass}
           onClick={() => append("" as never)}
         >
           + Add bullet

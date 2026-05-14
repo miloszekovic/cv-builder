@@ -1,6 +1,14 @@
 import type { CVData, SkillCategoryId, SkillLibrary } from "./cv-schema";
 import { SKILL_CATEGORY_LABELS } from "./cv-schema";
 
+/** Ensures `meta.accent` is set when binding accent radios in the form. */
+export function withDefaultMetaAccent(cv: CVData): CVData {
+  return {
+    ...cv,
+    meta: { ...cv.meta, accent: cv.meta.accent ?? "teal" },
+  };
+}
+
 export const defaultSkillLibraryTags: Record<SkillCategoryId, string[]> = {
   frontEnd: [
     "HTML",
@@ -92,6 +100,7 @@ export const blankCvData = (): CVData => {
   return {
     meta: {
       sidebarPosition: "right",
+      accent: "teal",
     },
     body: {
       experience: [],
@@ -119,6 +128,7 @@ export const exampleCvData = (): CVData => {
       versionName: "Demo Showcase CV",
       targetRole: "Senior Front-End Engineer",
       sidebarPosition: "right",
+      accent: "indigo",
     },
     body: {
       photoMode: "initials",

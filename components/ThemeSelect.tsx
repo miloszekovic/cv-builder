@@ -3,6 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
+import { motionInteractive } from "@/lib/motion-styles";
 import {
   applyTheme,
   readStoredTheme,
@@ -11,7 +12,12 @@ import {
   type AppTheme,
 } from "@/lib/theme";
 
-export function ThemeSelect() {
+type ThemeSelectProps = {
+  /** When true, no outer frame — use inside a bordered toolbar cell */
+  embedded?: boolean;
+};
+
+export function ThemeSelect({ embedded = false }: ThemeSelectProps) {
   const theme = useSyncExternalStore(subscribeTheme, readStoredTheme, () => "dark");
 
   const set = (next: AppTheme) => {
@@ -19,14 +25,19 @@ export function ThemeSelect() {
     applyTheme(next);
   };
 
-  const btn = (active: boolean) =>
+  const btn = (active: boolean, kind: "dark" | "light") =>
     cn(
-      "rounded-lg p-2 outline-hidden transition-colors",
+      motionInteractive,
+      "rounded-lg p-2 outline-hidden",
       "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
       "dark:focus-visible:ring-offset-slate-900",
-      active
-        ? "bg-slate-900 text-white dark:bg-blue-600 dark:text-white"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+      kind === "dark"
+        ? active
+          ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-500"
+          : "text-indigo-800 hover:bg-indigo-100/90 dark:text-indigo-200 dark:hover:bg-indigo-950/60"
+        : active
+          ? "bg-amber-500 text-white shadow-sm dark:bg-amber-500"
+          : "text-amber-900 hover:bg-amber-100/90 dark:text-amber-100 dark:hover:bg-amber-950/50",
     );
 
   return (
@@ -34,15 +45,17 @@ export function ThemeSelect() {
       role="group"
       aria-label="Theme"
       className={cn(
-        "inline-flex items-center gap-1 rounded-lg border border-slate-200/90 bg-white p-1 shadow-xs",
-        "dark:border-slate-600 dark:bg-slate-900",
+        "inline-flex items-center gap-0.5 rounded-lg p-1",
+        embedded
+          ? "bg-transparent"
+          : "border border-slate-200/90 bg-slate-100/80 shadow-xs dark:border-slate-600 dark:bg-slate-800/90",
       )}
     >
       <button
         type="button"
         aria-label="Dark theme"
         aria-pressed={theme === "dark"}
-        className={btn(theme === "dark")}
+        className={btn(theme === "dark", "dark")}
         onClick={() => set("dark")}
       >
         <Moon className="size-[1.125rem] shrink-0" aria-hidden />
@@ -51,7 +64,7 @@ export function ThemeSelect() {
         type="button"
         aria-label="Light theme"
         aria-pressed={theme === "light"}
-        className={btn(theme === "light")}
+        className={btn(theme === "light", "light")}
         onClick={() => set("light")}
       >
         <Sun className="size-[1.125rem] shrink-0" aria-hidden />

@@ -32,7 +32,7 @@ function buildSystemPrompt() {
     "If information is missing, omit fields or use empty strings/empty arrays — do NOT fabricate employers or credentials.",
     "Keep bullets tight (ideally one line each). Limit experience entries unless the user clearly describes multiple roles.",
     "sidebar.skills: include categoryId and visibleTags arrays; only include tags that fit the user story (subset is fine).",
-    "meta.sidebarPosition must be 'left' or 'right'. Default 'right'.",
+    "meta.sidebarPosition must be 'left' or 'right'. Default 'right'. meta.accent is optional; if omitted, the app uses teal.",
   ].join("\n");
 }
 
@@ -47,7 +47,7 @@ function buildUserPrompt(input: GenerateCvInput) {
     input.description.trim() || "(empty)",
     "",
     "Return a single JSON object with keys: meta, body, sidebar — matching this TypeScript shape:",
-    "{ meta: { versionName?, targetRole?, sidebarPosition: 'left'|'right' },",
+    "{ meta: { versionName?, targetRole?, sidebarPosition: 'left'|'right', accent?: 'teal'|'ocean'|'lavender'|'rose'|'sage'|'clay'|'indigo' },",
     "  body: { image?, photoMode?: 'image'|'initials'|'none', name?, mainRole?, profile?, experience?: Array<{ role?, company?, startYear?, endYear?: number|'present', intro?, bullets?: string[], outro? }> },",
     "  sidebar: { details?: { location?, email?, phone?, website?, linkedIn?, gitHub? }, education?: Array<{ university?, title? }>,",
     "    skills?: Array<{ categoryId: 'frontEnd'|'uiUx'|'tools'|'aiAutomation'|'principles'|'cms'|'os', visibleTags: string[] }>,",

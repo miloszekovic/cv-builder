@@ -1,15 +1,39 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
-import { useState } from "react";
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import {
+  Github,
+  Globe,
+  Linkedin,
+  Loader2,
+  Mail,
+  MapPin,
+  PenLine,
+  Phone,
+  Sparkles,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
+import {
+  useFieldArray,
+  useFormContext,
+  useWatch,
+  type UseFormRegister,
+} from "react-hook-form";
 import type { CVData, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
+import type { CvAccentId } from "@/lib/cv-accents";
+import { CV_ACCENTS, CV_ACCENT_IDS } from "@/lib/cv-accents";
 import { effectivePhotoMode } from "@/lib/cv-photo";
-import { formFieldClass, formLabelClass } from "@/lib/form-styles";
+import { formFieldClass, formLabelClass, formSelectClass } from "@/lib/form-styles";
+import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
 import { ExperienceEditor } from "@/components/ExperienceEditor";
+import { Reveal } from "@/components/Reveal";
 import { SkillsManager } from "@/components/SkillsManager";
 import type { GenerateCvInput } from "@/lib/openai";
+
+const addFieldTriggerClass = cn(
+  motionTextButton,
+  "text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300",
+);
 
 export function CVForm({
   mode,
@@ -28,7 +52,7 @@ export function CVForm({
   aiBusy: boolean;
   aiError: string | null;
 }) {
-  const { register } = useFormContext<CVData>();
+  const { register, watch } = useFormContext<CVData>();
 
   return (
     <div className="space-y-8">
@@ -37,12 +61,26 @@ export function CVForm({
         role="tablist"
         aria-label="Editor mode"
       >
-        <ModeTab id="manual" current={mode} setMode={setMode} label="Manual" />
-        <ModeTab id="ai" current={mode} setMode={setMode} label="AI-assisted" />
+        <ModeTab
+          id="manual"
+          current={mode}
+          setMode={setMode}
+          label="Manual"
+          icon={<PenLine className="size-4 shrink-0 opacity-80" aria-hidden />}
+        />
+        <ModeTab
+          id="ai"
+          current={mode}
+          setMode={setMode}
+          label="AI-assisted"
+          icon={<Sparkles className="size-4 shrink-0 opacity-80" aria-hidden />}
+        />
       </div>
 
       {mode === "ai" && (
-        <AiPanel onGenerate={onGenerate} aiBusy={aiBusy} aiError={aiError} />
+        <Reveal>
+          <AiPanel onGenerate={onGenerate} aiBusy={aiBusy} aiError={aiError} />
+        </Reveal>
       )}
 
       {mode === "manual" && (
@@ -58,6 +96,13 @@ export function CVForm({
                 <input className={formFieldClass} {...register("body.mainRole")} />
               </label>
             </div>
+            <fieldset className="space-y-2.5">
+              <legend className={formLabelClass}>Accent color</legend>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Pastel accents for your name, contact icons, and initials tile.
+              </p>
+              <AccentSwatches register={register} currentId={watch("meta.accent") ?? "teal"} />
+            </fieldset>
             <PhotoField />
             <label className="block space-y-1.5">
               <span className={formLabelClass}>Profile / intro</span>
@@ -70,19 +115,30 @@ export function CVForm({
           </Section>
 
           <Section title="Sidebar — details">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-3 gap-3 gap-y-4 sm:gap-4">
               {(
                 [
-                  ["location", "Location"],
-                  ["email", "Email"],
-                  ["phone", "Phone"],
-                  ["website", "Website"],
-                  ["linkedIn", "LinkedIn"],
-                  ["gitHub", "GitHub"],
+                  { key: "location" as const, lab: "Location", Icon: MapPin },
+                  { key: "email" as const, lab: "Email", Icon: Mail },
+                  { key: "phone" as const, lab: "Phone", Icon: Phone },
+                  { key: "website" as const, lab: "Website", Icon: Globe },
+                  { key: "linkedIn" as const, lab: "LinkedIn", Icon: Linkedin },
+                  { key: "gitHub" as const, lab: "GitHub", Icon: Github },
                 ] as const
-              ).map(([key, lab]) => (
-                <label key={key} className="block space-y-1.5">
-                  <span className={formLabelClass}>{lab}</span>
+              ).map(({ key, lab, Icon }) => (
+                <label key={key} className="min-w-0 block space-y-1.5">
+                  <span
+                    className={cn(
+                      formLabelClass,
+                      "inline-flex items-center gap-1.5",
+                    )}
+                  >
+                    <Icon
+                      className="size-4 shrink-0 text-slate-500 dark:text-slate-400"
+                      aria-hidden
+                    />
+                    {lab}
+                  </span>
                   <input
                     className={formFieldClass}
                     {...register(`sidebar.details.${key}`)}
@@ -95,6 +151,11 @@ export function CVForm({
           <Section title="Education">
             <EducationList />
           </Section>
+
+          <SkillsLibrarySection
+            skillLibrary={skillLibrary}
+            onSkillLibraryChange={onSkillLibraryChange}
+          />
 
           <Section title="Certificates">
             <CertificatesList />
@@ -118,13 +179,30 @@ export function CVForm({
         </>
       )}
 
-      <Section title="Skills library & visibility">
-        <SkillsManager
+      {mode === "ai" && (
+        <SkillsLibrarySection
           skillLibrary={skillLibrary}
           onSkillLibraryChange={onSkillLibraryChange}
         />
-      </Section>
+      )}
     </div>
+  );
+}
+
+function SkillsLibrarySection({
+  skillLibrary,
+  onSkillLibraryChange,
+}: {
+  skillLibrary: SkillLibrary;
+  onSkillLibraryChange: (lib: SkillLibrary) => void;
+}) {
+  return (
+    <Section title="Skills library & visibility">
+      <SkillsManager
+        skillLibrary={skillLibrary}
+        onSkillLibraryChange={onSkillLibraryChange}
+      />
+    </Section>
   );
 }
 
@@ -133,11 +211,13 @@ function ModeTab({
   current,
   setMode,
   label,
+  icon,
 }: {
   id: "manual" | "ai";
   current: "manual" | "ai";
   setMode: (m: "manual" | "ai") => void;
   label: string;
+  icon: ReactNode;
 }) {
   const on = current === id;
   return (
@@ -146,26 +226,70 @@ function ModeTab({
       role="tab"
       aria-selected={on}
       className={cn(
-        "rounded-lg px-4 py-2 text-base font-medium transition-colors",
+        motionInteractive,
+        "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-base font-medium",
         on
           ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-900 dark:text-slate-50 dark:ring-white/10"
-          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
+          : "text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/40 dark:hover:text-slate-100",
       )}
       onClick={() => setMode(id)}
     >
+      {icon}
       {label}
     </button>
   );
 }
 
+function AccentSwatches({
+  register,
+  currentId,
+}: {
+  register: UseFormRegister<CVData>;
+  currentId: CvAccentId;
+}) {
+  return (
+    <div
+      className="flex flex-wrap gap-2.5"
+      role="radiogroup"
+      aria-label="CV accent color"
+    >
+      {CV_ACCENT_IDS.map((id) => {
+        const selected = currentId === id;
+        return (
+          <label
+            key={id}
+            className={cn(
+              motionInteractive,
+              "relative flex cursor-pointer items-center justify-center rounded-full p-0.5 outline-none focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 dark:focus-within:ring-slate-100 dark:focus-within:ring-offset-slate-900",
+              selected
+                ? "ring-2 ring-slate-900 ring-offset-2 ring-offset-white dark:ring-slate-100 dark:ring-offset-slate-950"
+                : "ring-1 ring-slate-300/90 hover:ring-slate-400 dark:ring-slate-600",
+            )}
+            title={CV_ACCENTS[id].label}
+          >
+            <input type="radio" value={id} className="sr-only" {...register("meta.accent")} />
+            <span
+              aria-hidden
+              className="size-7 rounded-full border border-slate-900/10 shadow-inner dark:border-white/15"
+              style={{ backgroundColor: CV_ACCENTS[id].accent }}
+            />
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm ring-1 ring-slate-950/[0.04] dark:border-slate-700/90 dark:bg-slate-900 dark:ring-white/[0.05]">
-      <h3 className="border-b border-slate-100 pb-3 text-lg font-semibold tracking-tight text-slate-900 dark:border-slate-800 dark:text-slate-50">
-        {title}
-      </h3>
-      {children}
-    </section>
+    <Reveal>
+      <section className="space-y-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm ring-1 ring-slate-950/4 motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px motion-safe:hover:shadow-md dark:border-slate-700/90 dark:bg-slate-900 dark:ring-white/5 dark:motion-safe:hover:shadow-black/20">
+        <h3 className="border-b border-slate-100 pb-3 text-lg font-semibold tracking-tight text-slate-900 dark:border-slate-800 dark:text-slate-50">
+          {title}
+        </h3>
+        {children}
+      </section>
+    </Reveal>
   );
 }
 
@@ -180,7 +304,7 @@ function PhotoField() {
   };
 
   const radioRow =
-    "flex cursor-pointer items-center gap-2.5 rounded-lg border border-transparent px-3 py-2 text-base text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80";
+    "motion-safe:transition-colors motion-safe:duration-200 flex cursor-pointer items-center gap-2.5 rounded-lg border border-transparent px-3 py-2 text-base text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80";
 
   return (
     <div className="space-y-4">
@@ -220,7 +344,7 @@ function PhotoField() {
           <input
             type="file"
             accept="image/*"
-            className="text-base text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white dark:text-slate-400 dark:file:bg-blue-600"
+            className="block w-full max-w-full py-2.5 text-base leading-normal text-slate-600 file:mr-6 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-white file:transition-[filter,background-color] file:duration-200 file:hover:brightness-110 dark:text-slate-400 dark:file:bg-blue-600 dark:file:hover:brightness-110"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (!f) return;
@@ -263,7 +387,7 @@ function AiPanel({
     useState<NonNullable<GenerateCvInput["maxCvLength"]>>("medium");
 
   return (
-    <section className="space-y-4 rounded-2xl border border-blue-100/90 bg-linear-to-b from-blue-50/90 to-white p-6 shadow-sm ring-1 ring-blue-900/[0.04] dark:border-blue-900/50 dark:from-blue-950/50 dark:to-slate-900 dark:ring-white/[0.05]">
+    <section className="space-y-4 rounded-2xl border border-blue-100/90 bg-linear-to-b from-blue-50/90 to-white p-6 shadow-sm ring-1 ring-blue-900/4 dark:border-blue-900/50 dark:from-blue-950/50 dark:to-slate-900 dark:ring-white/5">
       <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
         <Sparkles className="size-5 shrink-0" aria-hidden />
         <h3 className="text-lg font-semibold">AI-assisted draft</h3>
@@ -293,7 +417,7 @@ function AiPanel({
         <label className="block space-y-1.5">
           <span className={formLabelClass}>Tone</span>
           <select
-            className={formFieldClass}
+            className={formSelectClass}
             value={tone}
             onChange={(e) => setTone(e.target.value as GenerateCvInput["tone"])}
           >
@@ -305,7 +429,7 @@ function AiPanel({
         <label className="block space-y-1.5">
           <span className={formLabelClass}>Length hint</span>
           <select
-            className={formFieldClass}
+            className={formSelectClass}
             value={maxCvLength}
             onChange={(e) =>
               setMaxCvLength(e.target.value as NonNullable<GenerateCvInput["maxCvLength"]>)
@@ -327,7 +451,10 @@ function AiPanel({
             maxCvLength,
           })
         }
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className={cn(
+          motionInteractive,
+          "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-60",
+        )}
       >
         {aiBusy ? (
           <>
@@ -357,7 +484,7 @@ function EducationList() {
     return (
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ university: "", title: "" })}
       >
         + Add education
@@ -391,7 +518,7 @@ function EducationList() {
       ))}
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ university: "", title: "" })}
       >
         + Add education
@@ -410,7 +537,7 @@ function CertificatesList() {
     return (
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ year: undefined, name: "" })}
       >
         + Add certificate
@@ -447,7 +574,7 @@ function CertificatesList() {
       ))}
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ year: undefined, name: "" })}
       >
         + Add certificate
@@ -463,7 +590,7 @@ function LanguagesList() {
     return (
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ name: "", level: "" })}
       >
         + Add language
@@ -495,7 +622,7 @@ function LanguagesList() {
       ))}
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append({ name: "", level: "" })}
       >
         + Add language
@@ -533,7 +660,7 @@ function HobbiesTags() {
       </div>
       <button
         type="button"
-        className="text-base font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className={addFieldTriggerClass}
         onClick={() => append("" as never)}
       >
         + Add hobby tag

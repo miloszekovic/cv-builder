@@ -8,6 +8,7 @@ import {
   shouldWarnPdfLength,
 } from "@/lib/pdf";
 import { cn } from "@/lib/cn";
+import { motionInteractive } from "@/lib/motion-styles";
 
 export function ExportButton({ getCv }: { getCv: () => CVData }) {
   const [busy, setBusy] = useState(false);
@@ -61,8 +62,9 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
         onClick={downloadPdf}
         disabled={busy}
         className={cn(
+          motionInteractive,
           "inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-base font-semibold text-white",
-          "hover:bg-blue-700 disabled:opacity-60",
+          "hover:bg-blue-700 hover:brightness-105 active:brightness-95 disabled:opacity-60 motion-reduce:hover:brightness-100 motion-reduce:active:brightness-100",
         )}
       >
         {busy ? (
@@ -75,7 +77,10 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
       <button
         type="button"
         onClick={printCv}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-200/90 bg-white px-4 py-2.5 text-base font-medium text-slate-800 shadow-xs hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+        className={cn(
+          motionInteractive,
+          "inline-flex items-center gap-2 rounded-lg border border-slate-200/90 bg-white px-4 py-2.5 text-base font-medium text-slate-800 shadow-xs hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+        )}
       >
         <Printer className="size-4" aria-hidden />
         Print
