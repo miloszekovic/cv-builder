@@ -63,6 +63,8 @@ export function CVForm({
       >
         <ModeTab
           id="manual"
+          tabId="tab-editor-manual"
+          panelId="panel-editor-manual"
           current={mode}
           setMode={setMode}
           label="Manual"
@@ -70,6 +72,8 @@ export function CVForm({
         />
         <ModeTab
           id="ai"
+          tabId="tab-editor-ai"
+          panelId="panel-editor-ai"
           current={mode}
           setMode={setMode}
           label="AI-assisted"
@@ -77,114 +81,121 @@ export function CVForm({
         />
       </div>
 
-      {mode === "ai" && (
-        <Reveal>
-          <AiPanel onGenerate={onGenerate} aiBusy={aiBusy} aiError={aiError} />
-        </Reveal>
-      )}
-
-      {mode === "manual" && (
-        <>
-          <Section title="Profile & header">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-1.5">
-                <span className={formLabelClass}>Name</span>
-                <input className={formFieldClass} {...register("body.name")} />
-              </label>
-              <label className="block space-y-1.5">
-                <span className={formLabelClass}>Main role</span>
-                <input className={formFieldClass} {...register("body.mainRole")} />
-              </label>
-            </div>
-            <fieldset className="space-y-2.5">
-              <legend className={formLabelClass}>Accent color</legend>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Pastel accents for your name, contact icons, and initials tile.
-              </p>
-              <AccentSwatches register={register} currentId={watch("meta.accent") ?? "teal"} />
-            </fieldset>
-            <PhotoField />
+      <div
+        id="panel-editor-manual"
+        role="tabpanel"
+        aria-labelledby="tab-editor-manual"
+        hidden={mode !== "manual"}
+        className="space-y-8"
+      >
+        <Section title="Profile & header">
+          <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1.5">
-              <span className={formLabelClass}>Profile / intro</span>
-              <textarea rows={5} className={formFieldClass} {...register("body.profile")} />
+              <span className={formLabelClass}>Name</span>
+              <input className={formFieldClass} {...register("body.name")} />
             </label>
-          </Section>
+            <label className="block space-y-1.5">
+              <span className={formLabelClass}>Main role</span>
+              <input className={formFieldClass} {...register("body.mainRole")} />
+            </label>
+          </div>
+          <fieldset className="space-y-2.5">
+            <legend className={formLabelClass}>Accent color</legend>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Pastel accents for your name, contact icons, and initials tile.
+            </p>
+            <AccentSwatches register={register} currentId={watch("meta.accent") ?? "teal"} />
+          </fieldset>
+          <PhotoField />
+          <label className="block space-y-1.5">
+            <span className={formLabelClass}>Profile / intro</span>
+            <textarea rows={5} className={formFieldClass} {...register("body.profile")} />
+          </label>
+        </Section>
 
-          <Section title="Experience">
-            <ExperienceEditor />
-          </Section>
+        <Section title="Experience">
+          <ExperienceEditor />
+        </Section>
 
-          <Section title="Sidebar — details">
-            <div className="grid grid-cols-3 gap-3 gap-y-4 sm:gap-4">
-              {(
-                [
-                  { key: "location" as const, lab: "Location", Icon: MapPin },
-                  { key: "email" as const, lab: "Email", Icon: Mail },
-                  { key: "phone" as const, lab: "Phone", Icon: Phone },
-                  { key: "website" as const, lab: "Website", Icon: Globe },
-                  { key: "linkedIn" as const, lab: "LinkedIn", Icon: Linkedin },
-                  { key: "gitHub" as const, lab: "GitHub", Icon: Github },
-                ] as const
-              ).map(({ key, lab, Icon }) => (
-                <label key={key} className="min-w-0 block space-y-1.5">
-                  <span
-                    className={cn(
-                      formLabelClass,
-                      "inline-flex items-center gap-1.5",
-                    )}
-                  >
-                    <Icon
-                      className="size-4 shrink-0 text-slate-500 dark:text-slate-400"
-                      aria-hidden
-                    />
-                    {lab}
-                  </span>
-                  <input
-                    className={formFieldClass}
-                    {...register(`sidebar.details.${key}`)}
+        <Section title="Sidebar — details">
+          <div className="grid grid-cols-3 gap-3 gap-y-4 sm:gap-4">
+            {(
+              [
+                { key: "location" as const, lab: "Location", Icon: MapPin },
+                { key: "email" as const, lab: "Email", Icon: Mail },
+                { key: "phone" as const, lab: "Phone", Icon: Phone },
+                { key: "website" as const, lab: "Website", Icon: Globe },
+                { key: "linkedIn" as const, lab: "LinkedIn", Icon: Linkedin },
+                { key: "gitHub" as const, lab: "GitHub", Icon: Github },
+              ] as const
+            ).map(({ key, lab, Icon }) => (
+              <label key={key} className="min-w-0 block space-y-1.5">
+                <span
+                  className={cn(
+                    formLabelClass,
+                    "inline-flex items-center gap-1.5",
+                  )}
+                >
+                  <Icon
+                    className="size-4 shrink-0 text-slate-500 dark:text-slate-400"
+                    aria-hidden
                   />
-                </label>
-              ))}
-            </div>
-          </Section>
+                  {lab}
+                </span>
+                <input
+                  className={formFieldClass}
+                  {...register(`sidebar.details.${key}`)}
+                />
+              </label>
+            ))}
+          </div>
+        </Section>
 
-          <Section title="Education">
-            <EducationList />
-          </Section>
+        <Section title="Education">
+          <EducationList />
+        </Section>
 
-          <SkillsLibrarySection
-            skillLibrary={skillLibrary}
-            onSkillLibraryChange={onSkillLibraryChange}
-          />
-
-          <Section title="Certificates">
-            <CertificatesList />
-          </Section>
-
-          <Section title="Languages">
-            <LanguagesList />
-          </Section>
-
-          <Section title="Hobbies & interests">
-            <label className="block space-y-1.5">
-              <span className={formLabelClass}>Free text (optional)</span>
-              <textarea
-                rows={2}
-                className={formFieldClass}
-                {...register("sidebar.hobbiesText")}
-              />
-            </label>
-            <HobbiesTags />
-          </Section>
-        </>
-      )}
-
-      {mode === "ai" && (
         <SkillsLibrarySection
           skillLibrary={skillLibrary}
           onSkillLibraryChange={onSkillLibraryChange}
         />
-      )}
+
+        <Section title="Certificates">
+          <CertificatesList />
+        </Section>
+
+        <Section title="Languages">
+          <LanguagesList />
+        </Section>
+
+        <Section title="Hobbies & interests">
+          <label className="block space-y-1.5">
+            <span className={formLabelClass}>Free text (optional)</span>
+            <textarea
+              rows={2}
+              className={formFieldClass}
+              {...register("sidebar.hobbiesText")}
+            />
+          </label>
+          <HobbiesTags />
+        </Section>
+      </div>
+
+      <div
+        id="panel-editor-ai"
+        role="tabpanel"
+        aria-labelledby="tab-editor-ai"
+        hidden={mode !== "ai"}
+        className="space-y-8"
+      >
+        <Reveal>
+          <AiPanel onGenerate={onGenerate} aiBusy={aiBusy} aiError={aiError} />
+        </Reveal>
+        <SkillsLibrarySection
+          skillLibrary={skillLibrary}
+          onSkillLibraryChange={onSkillLibraryChange}
+        />
+      </div>
     </div>
   );
 }
@@ -208,12 +219,16 @@ function SkillsLibrarySection({
 
 function ModeTab({
   id,
+  tabId,
+  panelId,
   current,
   setMode,
   label,
   icon,
 }: {
   id: "manual" | "ai";
+  tabId: string;
+  panelId: string;
   current: "manual" | "ai";
   setMode: (m: "manual" | "ai") => void;
   label: string;
@@ -222,9 +237,11 @@ function ModeTab({
   const on = current === id;
   return (
     <button
+      id={tabId}
       type="button"
       role="tab"
       aria-selected={on}
+      aria-controls={panelId}
       className={cn(
         motionInteractive,
         "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-base font-medium",
@@ -266,6 +283,7 @@ function AccentSwatches({
                 : "ring-1 ring-slate-300/90 hover:ring-slate-400 dark:ring-slate-600",
             )}
             title={CV_ACCENTS[id].label}
+            aria-label={CV_ACCENTS[id].label}
           >
             <input type="radio" value={id} className="sr-only" {...register("meta.accent")} />
             <span
@@ -284,9 +302,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <Reveal>
       <section className="space-y-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm ring-1 ring-slate-950/4 motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px motion-safe:hover:shadow-md dark:border-slate-700/90 dark:bg-slate-900 dark:ring-white/5 dark:motion-safe:hover:shadow-black/20">
-        <h3 className="border-b border-slate-100 pb-3 text-lg font-semibold tracking-tight text-slate-900 dark:border-slate-800 dark:text-slate-50">
+        <h2 className="border-b border-slate-100 pb-3 text-lg font-semibold tracking-tight text-slate-900 dark:border-slate-800 dark:text-slate-50">
           {title}
-        </h3>
+        </h2>
         {children}
       </section>
     </Reveal>
@@ -307,8 +325,8 @@ function PhotoField() {
     "motion-safe:transition-colors motion-safe:duration-200 flex cursor-pointer items-center gap-2.5 rounded-lg border border-transparent px-3 py-2 text-base text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80";
 
   return (
-    <div className="space-y-4">
-      <span className={formLabelClass}>Header appearance</span>
+    <fieldset className="space-y-4">
+      <legend className={formLabelClass}>Header appearance</legend>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <label className={radioRow}>
           <input
@@ -367,7 +385,7 @@ function PhotoField() {
           name).
         </p>
       )}
-    </div>
+    </fieldset>
   );
 }
 
@@ -390,7 +408,7 @@ function AiPanel({
     <section className="space-y-4 rounded-2xl border border-blue-100/90 bg-linear-to-b from-blue-50/90 to-white p-6 shadow-sm ring-1 ring-blue-900/4 dark:border-blue-900/50 dark:from-blue-950/50 dark:to-slate-900 dark:ring-white/5">
       <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
         <Sparkles className="size-5 shrink-0" aria-hidden />
-        <h3 className="text-lg font-semibold">AI-assisted draft</h3>
+        <h2 className="text-lg font-semibold">AI-assisted draft</h2>
       </div>
       <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400">
         Describe your background, strengths, and goals. The model fills the same fields as
@@ -455,6 +473,7 @@ function AiPanel({
           motionInteractive,
           "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-60",
         )}
+        aria-busy={aiBusy}
       >
         {aiBusy ? (
           <>
@@ -468,9 +487,11 @@ function AiPanel({
           </>
         )}
       </button>
-      <div className="min-h-5" aria-live="polite">
+      <div className="min-h-5" aria-live="polite" aria-relevant="additions text">
         {aiError && (
-          <p className="text-base text-red-600 dark:text-red-400">{aiError}</p>
+          <p className="text-base text-red-600 dark:text-red-400" role="alert">
+            {aiError}
+          </p>
         )}
       </div>
     </section>
@@ -510,6 +531,7 @@ function EducationList() {
               type="button"
               className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-slate-600 dark:text-red-400 dark:hover:bg-red-950/40"
               onClick={() => remove(i)}
+              aria-label={`Remove education entry ${i + 1}`}
             >
               Remove
             </button>
@@ -567,6 +589,7 @@ function CertificatesList() {
             type="button"
             className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-slate-600 dark:text-red-400 dark:hover:bg-red-950/40"
             onClick={() => remove(i)}
+            aria-label={`Remove certificate row ${i + 1}`}
           >
             Remove
           </button>
@@ -615,6 +638,7 @@ function LanguagesList() {
             type="button"
             className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-slate-600 dark:text-red-400 dark:hover:bg-red-950/40"
             onClick={() => remove(i)}
+            aria-label={`Remove language row ${i + 1}`}
           >
             Remove
           </button>

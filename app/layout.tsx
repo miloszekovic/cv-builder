@@ -31,6 +31,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full bg-slate-50 font-sans text-[17px] leading-relaxed text-slate-900 motion-safe:scroll-smooth dark:bg-slate-950 dark:text-slate-50"
       >
+        <a href="#main-content" className="skip-to-main">
+          Skip to main content
+        </a>
         <Script
           id="theme-init"
           strategy="beforeInteractive"

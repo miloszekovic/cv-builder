@@ -65,7 +65,7 @@ export function ExperienceEditor() {
                 onClick={() => move(index, index - 1)}
                 aria-label="Move experience up"
               >
-                <ChevronUp className="size-4" />
+                <ChevronUp className="size-4" aria-hidden />
               </button>
               <button
                 type="button"
@@ -74,7 +74,7 @@ export function ExperienceEditor() {
                 onClick={() => move(index, index + 1)}
                 aria-label="Move experience down"
               >
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4" aria-hidden />
               </button>
               <button
                 type="button"
@@ -82,7 +82,7 @@ export function ExperienceEditor() {
                 onClick={() => remove(index)}
                 aria-label="Remove experience"
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-4" aria-hidden />
               </button>
             </div>
           </div>
@@ -194,7 +194,7 @@ function BulletsEditor({ index }: { index: number }) {
               onClick={() => remove(bi)}
               aria-label="Remove bullet"
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-4" aria-hidden />
             </button>
           </div>
         ))}

@@ -56,11 +56,17 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      className="flex flex-wrap items-center gap-2"
+      role="group"
+      aria-label="Export and print"
+    >
       <button
         type="button"
         onClick={downloadPdf}
         disabled={busy}
+        aria-busy={busy}
+        aria-describedby={err ? "export-pdf-error" : undefined}
         className={cn(
           motionInteractive,
           "inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-base font-semibold text-white",
@@ -85,8 +91,8 @@ export function ExportButton({ getCv }: { getCv: () => CVData }) {
         <Printer className="size-4" aria-hidden />
         Print
       </button>
-        {err && (
-        <p className="text-base text-red-600 dark:text-red-400" role="alert">
+      {err && (
+        <p id="export-pdf-error" className="text-base text-red-600 dark:text-red-400" role="alert">
           {err}
         </p>
       )}

@@ -118,7 +118,7 @@ function CategoryBlock({
   return (
     <section className="motion-safe:transition-shadow motion-safe:duration-300 space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/3 motion-safe:hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:ring-white/4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="text-base font-semibold text-slate-900 dark:text-slate-50">{label}</h4>
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">{label}</h3>
       </div>
       <div className="flex flex-wrap gap-2.5">
         {libraryTags.length === 0 && (
@@ -139,6 +139,9 @@ function CategoryBlock({
                   : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500",
               )}
               aria-pressed={on}
+              aria-label={
+                on ? `${tag}, visible on CV. Click to hide from CV.` : `${tag}, hidden on CV. Click to show on CV.`
+              }
             >
               {tag}
             </button>
@@ -150,6 +153,7 @@ function CategoryBlock({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add tag to library"
+          aria-label="New skill tag name"
           className={cn(formFieldClass, "min-w-44 flex-1")}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -169,6 +173,7 @@ function CategoryBlock({
             onAddLibraryTag(draft);
             setDraft("");
           }}
+          aria-label="Add tag to library"
         >
           <Plus className="size-3.5" aria-hidden />
           Add
@@ -187,6 +192,7 @@ function CategoryBlock({
             onClick={() =>
               onLibraryTagsChange(libraryTags.filter((t) => t !== tag))
             }
+            aria-label={`Remove ${tag} from skill library`}
             title="Remove from library"
           >
             <X className="size-3" aria-hidden />
