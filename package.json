@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "PLAYWRIGHT_BROWSERS_PATH=0 next dev",
+    "dev": "PLAYWRIGHT_BROWSERS_PATH=0 next dev -p 3010",
     "build:print-css": "tailwindcss -i ./styles/print-entry.css -o ./public/cv-print.css --minify",
     "build": "npm run build:print-css && PLAYWRIGHT_BROWSERS_PATH=0 next build",
     "start": "PLAYWRIGHT_BROWSERS_PATH=0 next start",
