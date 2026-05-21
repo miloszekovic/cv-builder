@@ -11,9 +11,46 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+function metadataBase(): URL | undefined {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL);
+  }
+  if (process.env.VERCEL_URL) {
+    return new URL(`https://${process.env.VERCEL_URL}`);
+  }
+  return undefined;
+}
+
+const base = metadataBase();
+
 export const metadata: Metadata = {
+  ...(base ? { metadataBase: base } : {}),
   title: "CV Builder",
   description: "Create, preview, and export a professional CV as PDF.",
+  applicationName: "CV Builder",
+  manifest: "/site.webmanifest",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
+  appleWebApp: {
+    capable: true,
+    title: "CV Builder",
+    statusBarStyle: "black-translucent",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en",
+    url: "/",
+    siteName: "CV Builder",
+    title: "CV Builder",
+    description: "Create, preview, and export a professional CV as PDF.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CV Builder",
+    description: "Create, preview, and export a professional CV as PDF.",
+  },
 };
 
 export default function RootLayout({
