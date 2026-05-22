@@ -756,7 +756,7 @@ function Toolbar({
             htmlFor="cv-version-name"
             className="flex min-w-0 flex-col gap-0.5 sm:max-w-[min(100%,15rem)] sm:flex-row sm:items-center sm:gap-2"
           >
-            <span className="shrink-0 text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <span className="shrink-0 text-[0.6875rem] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
               CV name
             </span>
             <input
