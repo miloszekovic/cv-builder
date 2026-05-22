@@ -166,7 +166,10 @@ function normalizeExperienceRow(row: ExperienceItem): ExperienceItem {
   return {
     role: row.role ?? "",
     company: row.company ?? "",
+    country: row.country ?? "",
+    startMonth: row.startMonth,
     startYear: row.startYear,
+    endMonth: row.endMonth,
     endYear: row.endYear,
     intro: row.intro ?? "",
     bullets,
@@ -223,6 +226,8 @@ export const exampleCvData = (): CVData => {
         {
           role: "Lead Front-End Engineer",
           company: "Nimbus Analytics (demo)",
+          country: "Norway",
+          startMonth: 3,
           startYear: 2022,
           endYear: "present",
           intro:
@@ -239,7 +244,10 @@ export const exampleCvData = (): CVData => {
         {
           role: "Senior Front-End Developer",
           company: "Harbor Studio (demo agency)",
+          country: "United Kingdom",
+          startMonth: 4,
           startYear: 2019,
+          endMonth: 12,
           endYear: 2022,
           intro:
             "Digital agency building marketing sites, design systems, and light product UI for SaaS and fintech clients.",
@@ -254,7 +262,10 @@ export const exampleCvData = (): CVData => {
         {
           role: "UI Developer",
           company: "Brightline Health Tech (demo)",
+          country: "Germany",
+          startMonth: 1,
           startYear: 2017,
+          endMonth: 6,
           endYear: 2019,
           intro:
             "Patient-facing scheduling and account tools for a regional healthcare network.",
@@ -266,7 +277,10 @@ export const exampleCvData = (): CVData => {
         {
           role: "Junior Web Developer",
           company: "Pixel Foundry (demo)",
+          country: "Serbia",
+          startMonth: 9,
           startYear: 2015,
+          endMonth: 8,
           endYear: 2017,
           intro:
             "Small studio producing marketing sites and WordPress themes for local businesses.",

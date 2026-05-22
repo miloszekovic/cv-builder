@@ -28,10 +28,15 @@ export const detailsSchema = z.object({
 
 export type Details = z.infer<typeof detailsSchema>;
 
+export const experienceMonthSchema = z.number().int().min(1).max(12);
+
 export const experienceItemSchema = z.object({
   role: z.string().optional(),
   company: z.string().optional(),
+  country: z.string().optional(),
+  startMonth: experienceMonthSchema.optional(),
   startYear: z.number().int().optional(),
+  endMonth: experienceMonthSchema.optional(),
   endYear: endYearSchema.optional(),
   intro: z.string().optional(),
   bullets: z.array(z.string()).optional(),

@@ -15,6 +15,10 @@ import {
   showHeaderAvatar,
 } from "@/lib/cv-photo";
 import { cn } from "@/lib/cn";
+import {
+  formatExperiencePeriod,
+  hasExperiencePeriod,
+} from "@/lib/experience-dates";
 
 /** Section headings aligned with classic resume PDF export. */
 const SKILL_PRINT_LABELS: Record<SkillCategoryId, string> = {
@@ -31,16 +35,22 @@ function hasText(s?: string | null) {
   return Boolean(s?.trim());
 }
 
-function formatYears(
-  start?: number,
-  end?: number | "present",
-): string | null {
-  if (start == null && end == null) return null;
-  const endStr =
-    end === "present" ? "Present" : end != null ? String(end) : "";
-  const startStr = start != null ? String(start) : "";
-  if (startStr && endStr) return `${startStr} – ${endStr}`;
-  return startStr || endStr || null;
+
+function experienceHasContent(exp: ExperienceItem): boolean {
+  return (
+    hasText(exp.role) ||
+    hasText(exp.company) ||
+    hasText(exp.country) ||
+    hasText(exp.intro) ||
+    hasText(exp.outro) ||
+    (exp.bullets?.some(hasText) ?? false) ||
+    hasExperiencePeriod(
+      exp.startMonth,
+      exp.startYear,
+      exp.endMonth,
+      exp.endYear,
+    )
+  );
 }
 
 function PrintSectionTitle({ children }: { children: ReactNode }) {
@@ -92,15 +102,7 @@ function DetailsBlock({ details }: { details?: Details }) {
 
 function ExperienceBlock({ items }: { items?: ExperienceItem[] }) {
   if (!items?.length) return null;
-  const any = items.some(
-    (e) =>
-      hasText(e.role) ||
-      hasText(e.company) ||
-      hasText(e.intro) ||
-      hasText(e.outro) ||
-      (e.bullets?.some(hasText) ?? false) ||
-      formatYears(e.startYear, e.endYear),
-  );
+  const any = items.some(experienceHasContent);
   if (!any) return null;
   return (
     <section className="cv-print-experience-group space-y-6">
@@ -117,35 +119,50 @@ function ExperienceBlock({ items }: { items?: ExperienceItem[] }) {
 }
 
 function ExperienceItemView({ exp }: { exp: ExperienceItem }) {
-  const years = formatYears(exp.startYear, exp.endYear);
+  const period = formatExperiencePeriod(
+    exp.startMonth,
+    exp.startYear,
+    exp.endMonth,
+    exp.endYear,
+  );
   const bullets = (exp.bullets ?? []).filter(hasText);
+  const hasRole = hasText(exp.role);
+  const hasCompany = hasText(exp.company);
+  const hasCountry = hasText(exp.country);
   const hasBlock =
-    hasText(exp.role) ||
-    hasText(exp.company) ||
+    hasRole ||
+    hasCompany ||
+    hasCountry ||
     hasText(exp.intro) ||
     hasText(exp.outro) ||
     bullets.length > 0 ||
-    years;
+    period;
   if (!hasBlock) return null;
-
-  const titleParts: string[] = [];
-  if (hasText(exp.role)) titleParts.push(exp.role!.trim());
-  if (hasText(exp.company)) titleParts.push(exp.company!.trim());
-  const titleLine =
-    titleParts.length === 2
-      ? `${titleParts[0]} – ${titleParts[1]}`
-      : titleParts[0] ?? "";
 
   return (
     <article className="cv-print-job space-y-2">
-      {hasText(titleLine) && (
-        <p className="text-[11.5px] font-bold leading-snug text-slate-950">
-          {titleLine}
+      {(hasRole || hasCompany || hasCountry) && (
+        <p className="text-[11.5px] leading-snug text-slate-950">
+          {hasRole && (
+            <span className="font-bold">{exp.role!.trim()}</span>
+          )}
+          {hasRole && hasCompany && " – "}
+          {hasCompany && (
+            <span className="font-bold">{exp.company!.trim()}</span>
+          )}
+          {hasCountry && (
+            <>
+              {(hasRole || hasCompany) && ", "}
+              <span className="font-normal italic text-slate-500">
+                {exp.country!.trim()}
+              </span>
+            </>
+          )}
         </p>
       )}
-      {years && (
-        <p className="text-[10px] tabular-nums text-slate-500">
-          {years}
+      {period && (
+        <p className="text-[10px] italic tabular-nums text-slate-500">
+          {period}
         </p>
       )}
       {hasText(exp.intro) && (

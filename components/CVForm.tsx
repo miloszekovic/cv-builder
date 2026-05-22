@@ -60,7 +60,7 @@ export function CVForm({
   return (
     <div className="space-y-10">
       <div
-        className="flex w-full max-w-lg flex-col gap-2.5 sm:max-w-2xl sm:flex-row sm:items-stretch"
+        className="grid w-full grid-cols-2 gap-2.5"
         role="tablist"
         aria-label="Editor mode"
       >
@@ -297,7 +297,7 @@ function ModeTab({
       aria-controls={panelId}
       className={cn(
         motionInteractive,
-        "flex w-full min-h-11 flex-col items-center justify-center gap-px rounded-lg border-0 px-3 py-2 text-center shadow-none sm:min-h-12 sm:flex-1 sm:px-4 sm:py-2.5",
+        "flex w-full min-h-11 flex-col items-center justify-center gap-px rounded-lg border-0 px-2 py-2 text-center shadow-none sm:min-h-12 sm:px-4 sm:py-2.5",
         "outline-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-violet-500/55 focus-visible:ring-offset-0",
         on
           ? "bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
@@ -316,7 +316,7 @@ function ModeTab({
       {description ? (
         <span
           className={cn(
-            "max-w-56 text-[0.6875rem] font-medium leading-snug text-balance sm:max-w-none",
+            "max-w-full text-[0.6875rem] font-medium leading-snug text-balance sm:text-xs",
             on ? "text-violet-100" : "text-zinc-500 dark:text-zinc-400",
           )}
         >

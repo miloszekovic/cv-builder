@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
+import { EXPERIENCE_MONTH_OPTIONS } from "@/lib/experience-dates";
 import { formFieldClass, formLabelClass, formLabelControlStack, formSelectClass } from "@/lib/form-styles";
 import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
@@ -15,7 +16,10 @@ const addExperienceButtonClass = cn(
 const emptyExp = (): ExperienceItem => ({
   role: "",
   company: "",
+  country: "",
+  startMonth: undefined,
   startYear: undefined,
+  endMonth: undefined,
   endYear: undefined,
   intro: "",
   bullets: [""],
@@ -23,7 +27,7 @@ const emptyExp = (): ExperienceItem => ({
 });
 
 export function ExperienceEditor() {
-  const { control, register } = useFormContext<CVData>();
+  const { control, register, setValue } = useFormContext<CVData>();
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: "body.experience",
@@ -82,60 +86,134 @@ export function ExperienceEditor() {
               </button>
             </div>
           </div>
+          <label className={formLabelControlStack}>
+            <span className={formLabelClass}>Role</span>
+            <input className={formFieldClass} {...register(`body.experience.${index}.role`)} />
+          </label>
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className={formLabelControlStack}>
-              <span className={formLabelClass}>Role</span>
-              <input className={formFieldClass} {...register(`body.experience.${index}.role`)} />
-            </label>
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Company</span>
               <input className={formFieldClass} {...register(`body.experience.${index}.company`)} />
             </label>
             <label className={formLabelControlStack}>
-              <span className={formLabelClass}>Start year</span>
+              <span className={formLabelClass}>Country</span>
               <input
-                type="number"
                 className={formFieldClass}
-                {...register(`body.experience.${index}.startYear`, {
-                  setValueAs: (v) =>
-                    v === "" || v === undefined ? undefined : Number(v),
-                })}
+                placeholder="e.g. Sweden"
+                {...register(`body.experience.${index}.country`)}
               />
             </label>
-            <label className={formLabelControlStack}>
-              <span className={formLabelClass}>End year</span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <fieldset className="space-y-3 sm:col-span-1">
+              <legend className={formLabelClass}>Start</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <Controller
+                  control={control}
+                  name={`body.experience.${index}.startMonth`}
+                  render={({ field }) => (
+                    <select
+                      className={formSelectClass}
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        field.onChange(v === "" ? undefined : Number(v));
+                      }}
+                    >
+                      <option value="">Month</option>
+                      {EXPERIENCE_MONTH_OPTIONS.map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                <input
+                  type="number"
+                  className={formFieldClass}
+                  placeholder="Year"
+                  {...register(`body.experience.${index}.startYear`, {
+                    setValueAs: (v) =>
+                      v === "" || v === undefined ? undefined : Number(v),
+                  })}
+                />
+              </div>
+            </fieldset>
+            <fieldset className="space-y-3 sm:col-span-1">
+              <legend className={formLabelClass}>End</legend>
               <Controller
                 control={control}
                 name={`body.experience.${index}.endYear`}
-                render={({ field }) => (
-                  <select className={formSelectClass}
-                    value={
-                      field.value === "present"
-                        ? "present"
-                        : field.value != null
-                          ? String(field.value)
-                          : ""
-                    }
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === "") field.onChange(undefined);
-                      else if (v === "present") field.onChange("present");
-                      else field.onChange(Number(v));
-                    }}
-                  >
-                    <option value="">—</option>
-                    <option value="present">Present</option>
-                    {Array.from({ length: 40 }, (_, i) => new Date().getFullYear() - i).map(
-                      (y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                )}
+                render={({ field: endYearField }) => {
+                  const isPresent = endYearField.value === "present";
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Controller
+                          control={control}
+                          name={`body.experience.${index}.endMonth`}
+                          render={({ field: monthField }) => (
+                            <select
+                              className={formSelectClass}
+                              disabled={isPresent}
+                              value={isPresent ? "" : (monthField.value ?? "")}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                monthField.onChange(v === "" ? undefined : Number(v));
+                              }}
+                            >
+                              <option value="">Month</option>
+                              {EXPERIENCE_MONTH_OPTIONS.map(({ value, label }) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        />
+                        <input
+                          type="number"
+                          className={formFieldClass}
+                          placeholder="Year"
+                          disabled={isPresent}
+                          value={
+                            isPresent || endYearField.value == null
+                              ? ""
+                              : endYearField.value
+                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            endYearField.onChange(
+                              v === "" ? undefined : Number(v),
+                            );
+                          }}
+                        />
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          className="size-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500 dark:border-zinc-600"
+                          checked={isPresent}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              endYearField.onChange("present");
+                              setValue(
+                                `body.experience.${index}.endMonth`,
+                                undefined,
+                              );
+                            } else {
+                              endYearField.onChange(undefined);
+                            }
+                          }}
+                        />
+                        <span className={formLabelClass}>Present</span>
+                      </label>
+                    </>
+                  );
+                }}
               />
-            </label>
+            </fieldset>
           </div>
           <label className={formLabelControlStack}>
             <span className={formLabelClass}>Company / role intro</span>

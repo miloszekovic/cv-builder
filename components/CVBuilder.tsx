@@ -41,6 +41,7 @@ import { formFieldClass, formSelectClass } from "@/lib/form-styles";
 import { motionInteractive } from "@/lib/motion-styles";
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { CVBuilderMark, CVBuilderWordmark } from "@/components/CVBuilderLogo";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export function CVBuilder() {
   const [hydrated, setHydrated] = useState(false);
@@ -320,6 +321,8 @@ export function CVBuilder() {
           </aside>
         </div>
         </main>
+
+        <SiteFooter />
       </div>
 
       <div className="hidden print:block bg-white">
