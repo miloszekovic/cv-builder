@@ -31,11 +31,12 @@ export function useCvPdfPreview(cv: CVData) {
   useEffect(() => {
     let cancelled = false;
     const seq = ++requestSeq.current;
+    const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setBusy(true);
       setErr(null);
       try {
-        const nextBlob = await fetchCvPdfBlob(cv);
+        const nextBlob = await fetchCvPdfBlob(cv, controller.signal);
         if (cancelled || requestSeq.current !== seq) return;
         const url = URL.createObjectURL(nextBlob);
         if (cancelled || requestSeq.current !== seq) {
@@ -45,6 +46,7 @@ export function useCvPdfPreview(cv: CVData) {
         replaceBlobUrl(url, nextBlob);
       } catch (e) {
         if (cancelled || requestSeq.current !== seq) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
         replaceBlobUrl(null, null);
         setErr(e instanceof Error ? e.message : "Preview failed");
       } finally {
@@ -54,6 +56,7 @@ export function useCvPdfPreview(cv: CVData) {
 
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearTimeout(timer);
     };
   }, [cv, replaceBlobUrl]);

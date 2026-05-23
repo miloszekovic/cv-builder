@@ -1,9 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
-import { chromium as playwrightChromium, type Browser } from "playwright-core";
+import { chromium as playwrightChromium, type Browser, type Page } from "playwright-core";
 import { getCvAccent } from "./cv-accents";
 import type { CVData } from "./cv-schema";
+
+/** Reuse one browser locally; serverless must launch per request (concurrency + freeze). */
+const isServerless = Boolean(process.env.VERCEL);
 
 let sharedBrowser: Browser | null = null;
 
@@ -20,9 +23,11 @@ async function resolveSparticuzExecutable(
 }
 
 async function launchPdfBrowser(): Promise<Browser> {
-  if (process.env.VERCEL) {
+  if (isServerless) {
     const sparticuzChromium = await import("@sparticuz/chromium");
     const chromium = sparticuzChromium.default;
+    // CV PDF is static HTML/CSS — skip WebGL/swiftshader for stability on Lambda.
+    chromium.setGraphicsMode = false;
     return playwrightChromium.launch({
       args: chromium.args,
       executablePath: await resolveSparticuzExecutable(chromium),
@@ -34,19 +39,24 @@ async function launchPdfBrowser(): Promise<Browser> {
   return chromium.launch({ headless: true });
 }
 
-async function getPdfBrowser(): Promise<Browser> {
+async function getSharedBrowser(): Promise<Browser> {
   if (sharedBrowser?.isConnected()) return sharedBrowser;
   sharedBrowser = await launchPdfBrowser();
   return sharedBrowser;
 }
 
-async function closePdfBrowser(): Promise<void> {
+async function closeSharedBrowser(): Promise<void> {
   if (!sharedBrowser) return;
   try {
     await sharedBrowser.close();
   } finally {
     sharedBrowser = null;
   }
+}
+
+function isBrowserClosedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /browser has been closed|target page, context or browser has been closed/i.test(msg);
 }
 
 export function loadPrintCss(): string {
@@ -79,31 +89,65 @@ export async function buildCvPrintHtml(cv: CVData, css: string): Promise<string>
 </html>`;
 }
 
-export async function renderCvToPdfBuffer(cv: CVData): Promise<Buffer> {
-  const css = loadPrintCss();
-  const html = await buildCvPrintHtml(cv, css);
-  const browser = await getPdfBrowser();
-  const page = await browser.newPage();
-  try {
-    await page.setContent(html, { waitUntil: "networkidle" });
-    await page.emulateMedia({ media: "print" });
-    const accentHex = getCvAccent(cv.meta.accent).accent;
-    const footerTemplate = `<div style="width:100%;box-sizing:border-box;border-top:2px solid ${accentHex};padding:5px 16mm 0;display:flex;justify-content:flex-end;font-family:ui-sans-serif,system-ui,sans-serif,-apple-system,sans-serif;">
+async function renderPageToPdf(page: Page, html: string, cv: CVData): Promise<Buffer> {
+  await page.setContent(html, { waitUntil: "load" });
+  await page.emulateMedia({ media: "print" });
+  const accentHex = getCvAccent(cv.meta.accent).accent;
+  const footerTemplate = `<div style="width:100%;box-sizing:border-box;border-top:2px solid ${accentHex};padding:5px 16mm 0;display:flex;justify-content:flex-end;font-family:ui-sans-serif,system-ui,sans-serif,-apple-system,sans-serif;">
 <span style="font-size:8px;font-style:italic;font-weight:400;color:#94a3b8;letter-spacing:0.03em;line-height:1.25;">Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>
 </div>`;
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: "<div></div>",
-      footerTemplate,
-      margin: { top: "16mm", bottom: "14mm", left: "8mm", right: "8mm" },
-    });
-    return Buffer.from(pdf);
+  const pdf = await page.pdf({
+    format: "A4",
+    printBackground: true,
+    displayHeaderFooter: true,
+    headerTemplate: "<div></div>",
+    footerTemplate,
+    margin: { top: "16mm", bottom: "14mm", left: "8mm", right: "8mm" },
+  });
+  return Buffer.from(pdf);
+}
+
+async function renderWithDedicatedBrowser(html: string, cv: CVData): Promise<Buffer> {
+  const browser = await launchPdfBrowser();
+  try {
+    const page = await browser.newPage();
+    try {
+      return await renderPageToPdf(page, html, cv);
+    } finally {
+      await page.close().catch(() => {});
+    }
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
+async function renderWithSharedBrowser(html: string, cv: CVData): Promise<Buffer> {
+  const browser = await getSharedBrowser();
+  const page = await browser.newPage();
+  try {
+    return await renderPageToPdf(page, html, cv);
   } catch (e) {
-    await closePdfBrowser().catch(() => {});
+    await closeSharedBrowser().catch(() => {});
     throw e;
   } finally {
     await page.close().catch(() => {});
   }
+}
+
+export async function renderCvToPdfBuffer(cv: CVData): Promise<Buffer> {
+  const css = loadPrintCss();
+  const html = await buildCvPrintHtml(cv, css);
+
+  if (isServerless) {
+    try {
+      return await renderWithDedicatedBrowser(html, cv);
+    } catch (e) {
+      if (isBrowserClosedError(e)) {
+        return renderWithDedicatedBrowser(html, cv);
+      }
+      throw e;
+    }
+  }
+
+  return renderWithSharedBrowser(html, cv);
 }

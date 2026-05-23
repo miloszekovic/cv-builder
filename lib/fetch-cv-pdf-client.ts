@@ -1,10 +1,11 @@
 import type { CVData } from "./cv-schema";
 
-export async function fetchCvPdfBlob(cv: CVData): Promise<Blob> {
+export async function fetchCvPdfBlob(cv: CVData, signal?: AbortSignal): Promise<Blob> {
   const res = await fetch("/api/export-pdf", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ cv }),
+    signal,
   });
   if (!res.ok) {
     const j = (await res.json().catch(() => null)) as { error?: string } | null;
