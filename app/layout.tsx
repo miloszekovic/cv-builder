@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import "@/styles/print.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 const inter = Inter({

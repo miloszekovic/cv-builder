@@ -18,15 +18,14 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type TransitionEvent,
 } from "react";
 import type { RefObject } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
 import { CVForm } from "@/components/CVForm";
 import { CVPreview } from "@/components/CVPreview";
-import { CVPrint } from "@/components/print/CVPrint";
 import { ExportButton } from "@/components/ExportButton";
+import { useCvPdfPreview } from "@/hooks/use-cv-pdf-preview";
 import { cvDataSchema, type CVData, type SkillLibrary } from "@/lib/cv-schema";
 import {
   blankCvData,
@@ -42,6 +41,7 @@ import { motionInteractive } from "@/lib/motion-styles";
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { CVBuilderMark, CVBuilderWordmark } from "@/components/CVBuilderLogo";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ModalFadeShell } from "@/components/ModalFadeShell";
 
 export function CVBuilder() {
   const [hydrated, setHydrated] = useState(false);
@@ -62,6 +62,7 @@ export function CVBuilder() {
   const [saveFeedbackVisible, setSaveFeedbackVisible] = useState(false);
   const saveFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<CVData>({
     resolver: zodResolver(cvDataSchema),
@@ -111,6 +112,11 @@ export function CVBuilder() {
   }, [loadVersionIntoForm]);
 
   const cvSnapshot = useWatch({ control: form.control }) as CVData;
+  const pdfPreview = useCvPdfPreview(cvSnapshot);
+  const pdfBlobRef = useRef<Blob | null>(null);
+  const pdfBlobUrlRef = useRef<string | null>(null);
+  pdfBlobRef.current = pdfPreview.blob;
+  pdfBlobUrlRef.current = pdfPreview.blobUrl;
 
   useEffect(() => {
     if (!hydrated || !activeId) return;
@@ -224,7 +230,7 @@ export function CVBuilder() {
 
   return (
     <FormProvider {...form}>
-      <div className="print:hidden app-shell-enter mx-auto w-full max-w-[1920px] px-4 py-10 sm:px-8 sm:py-12 md:px-12 lg:px-16 lg:py-14 xl:px-20 2xl:px-24">
+      <div className="app-shell-enter mx-auto w-full max-w-[1920px] px-4 py-10 sm:px-8 sm:py-12 md:px-12 lg:px-16 lg:py-14 xl:px-20 2xl:px-24">
         <nav aria-label="Workspace" className="contents">
           <Toolbar
             activeId={activeId}
@@ -282,6 +288,10 @@ export function CVBuilder() {
             onLoadExample={() => setLoadDemoOpen(true)}
             tagline="Edit, preview, and export a concise CV. All fields are optional."
             getCv={() => form.getValues()}
+            getPdfBlob={() => pdfBlobRef.current}
+            getPdfBlobUrl={() => pdfBlobUrlRef.current}
+            previewIframeRef={previewIframeRef}
+            previewBusy={pdfPreview.busy}
           />
         </nav>
 
@@ -315,7 +325,10 @@ export function CVBuilder() {
               Live preview
             </h2>
             <CVPreview
-              cv={cvSnapshot}
+              ref={previewIframeRef}
+              blobUrl={pdfPreview.blobUrl}
+              busy={pdfPreview.busy}
+              err={pdfPreview.err}
               className="min-h-0 w-full max-h-[calc(100vh-5.5rem)]"
             />
           </aside>
@@ -323,10 +336,6 @@ export function CVBuilder() {
         </main>
 
         <SiteFooter />
-      </div>
-
-      <div className="hidden print:block bg-white">
-        <CVPrint cv={cvSnapshot} />
       </div>
 
       {typeof document !== "undefined" &&
@@ -380,67 +389,6 @@ export function CVBuilder() {
           document.body,
         )}
     </FormProvider>
-  );
-}
-
-function prefersReducedMotion() {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-/** Fade in/out; parent toggles `open` — shell stays mounted until opacity exit ends. */
-function ModalFadeShell({
-  open,
-  children,
-}: {
-  open: boolean;
-  children: React.ReactNode;
-}) {
-  const [mounted, setMounted] = useState(open);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setMounted(true);
-      if (prefersReducedMotion()) {
-        setVisible(true);
-        return;
-      }
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => setVisible(true));
-      });
-      return () => cancelAnimationFrame(id);
-    }
-
-    if (prefersReducedMotion()) {
-      setVisible(false);
-      setMounted(false);
-      return;
-    }
-    setVisible(false);
-  }, [open]);
-
-  const onTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
-    if (e.propertyName !== "opacity" || e.target !== e.currentTarget) return;
-    if (!open) setMounted(false);
-  };
-
-  if (!mounted) return null;
-
-  return (
-    <div
-      role="presentation"
-      onTransitionEnd={onTransitionEnd}
-      className={cn(
-        "fixed inset-0 z-200 flex items-end justify-center p-4 sm:items-center sm:p-6",
-        "ease-out motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none",
-        visible ? "opacity-100" : "opacity-0",
-      )}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -676,6 +624,10 @@ function Toolbar({
   onLoadExample,
   tagline,
   getCv,
+  getPdfBlob,
+  getPdfBlobUrl,
+  previewIframeRef,
+  previewBusy,
 }: {
   activeId: string;
   versions: { id: string; name: string; updatedAt: string }[];
@@ -692,6 +644,10 @@ function Toolbar({
   onLoadExample: () => void;
   tagline: string;
   getCv: () => CVData;
+  getPdfBlob: () => Blob | null;
+  getPdfBlobUrl: () => string | null;
+  previewIframeRef: RefObject<HTMLIFrameElement | null>;
+  previewBusy: boolean;
 }) {
   const { register } = useFormContext<CVData>();
   const jsonIoBtnClass = cn(
@@ -879,7 +835,14 @@ function Toolbar({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 lg:justify-end">
-          <ExportButton getCv={getCv} compact />
+          <ExportButton
+            getCv={getCv}
+            getPdfBlob={getPdfBlob}
+            getPdfBlobUrl={getPdfBlobUrl}
+            previewIframeRef={previewIframeRef}
+            previewBusy={previewBusy}
+            compact
+          />
         </div>
       </div>
     </div>

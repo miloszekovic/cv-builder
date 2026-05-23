@@ -1,83 +1,18 @@
 "use client";
 
-import type { CVData } from "@/lib/cv-schema";
 import { cn } from "@/lib/cn";
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef } from "react";
 
-/** Wait after last change before hitting the server (Playwright PDF). */
-const PREVIEW_DEBOUNCE_MS = 900;
-
-/**
- * Live preview = isti PDF kao „Export PDF“: POST na `/api/export-pdf`, prikaz u `<iframe>`.
- * Debounce smanjuje broj renderovanja na serveru.
- */
-export function CVPreview({ cv, className }: { cv: CVData; className?: string }) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const requestSeq = useRef(0);
-  const blobUrlRef = useRef<string | null>(null);
-
-  const replaceBlobUrl = useCallback((next: string | null) => {
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-      blobUrlRef.current = null;
-    }
-    if (next) blobUrlRef.current = next;
-    setBlobUrl(next);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const seq = ++requestSeq.current;
-    const timer = window.setTimeout(async () => {
-      setBusy(true);
-      setErr(null);
-      try {
-        const res = await fetch("/api/export-pdf", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cv }),
-        });
-        if (cancelled || requestSeq.current !== seq) return;
-        if (!res.ok) {
-          const j = (await res.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(j?.error || res.statusText || "Preview failed");
-        }
-        const blob = await res.blob();
-        if (cancelled || requestSeq.current !== seq) return;
-        const url = URL.createObjectURL(blob);
-        if (cancelled || requestSeq.current !== seq) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        replaceBlobUrl(url);
-      } catch (e) {
-        if (cancelled || requestSeq.current !== seq) return;
-        replaceBlobUrl(null);
-        setErr(e instanceof Error ? e.message : "Preview failed");
-      } finally {
-        if (!cancelled && requestSeq.current === seq) setBusy(false);
-      }
-    }, PREVIEW_DEBOUNCE_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [cv, replaceBlobUrl]);
-
-  useEffect(
-    () => () => {
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-      }
-    },
-    [],
-  );
-
+export const CVPreview = forwardRef<
+  HTMLIFrameElement,
+  {
+    blobUrl: string | null;
+    busy: boolean;
+    err: string | null;
+    className?: string;
+  }
+>(function CVPreview({ blobUrl, busy, err, className }, ref) {
   const showPlaceholder = !blobUrl && !busy && !err;
 
   return (
@@ -106,12 +41,13 @@ export function CVPreview({ cv, className }: { cv: CVData; className?: string })
               {err}
             </p>
             <p className="max-w-sm text-xs text-zinc-600 dark:text-zinc-400">
-              Isti API kao export; ako je export isključen, nema pregleda.
+              Uses the same API as export; if export is disabled, preview is unavailable.
             </p>
           </div>
         )}
         {blobUrl && !err && (
           <iframe
+            ref={ref}
             key={blobUrl}
             title="CV PDF preview"
             src={blobUrl}
@@ -120,10 +56,10 @@ export function CVPreview({ cv, className }: { cv: CVData; className?: string })
         )}
         {showPlaceholder && (
           <div className="flex flex-1 items-center justify-center p-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            Menjaj polja da se pojavi pregled.
+            Edit fields to generate a preview.
           </div>
         )}
       </div>
     </div>
   );
-}
+});

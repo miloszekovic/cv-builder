@@ -14,7 +14,7 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="print:hidden mt-16 border-t border-zinc-200/80 pt-8 dark:border-zinc-800/90 sm:mt-20 sm:pt-10">
+    <footer className="mt-16 border-t border-zinc-200/80 pt-8 dark:border-zinc-800/90 sm:mt-20 sm:pt-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <CVBuilderLogo className="opacity-90" />
         <p className="max-w-xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">

@@ -3,6 +3,8 @@ import { cvDataSchema } from "@/lib/cv-schema";
 import { renderCvToPdfBuffer } from "@/lib/render-cv-pdf";
 
 export const runtime = "nodejs";
+/** PDF render (Chromium cold start) — capped by Vercel plan. */
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   if (process.env.PDF_EXPORT_ENABLED === "false") {

@@ -15,7 +15,7 @@ A web app for building CVs: a validated form, live preview, themes, browser stor
 ## Requirements
 
 - Node.js 20+
-- For PDF: Playwright Chromium installed (`npx playwright install chromium` after `npm install`).
+- For PDF: Playwright Chromium installed locally (`npx playwright install chromium` after `npm install`). On Vercel, PDF uses `@sparticuz/chromium` automatically — no extra install step.
 
 ## Getting started
 
@@ -52,7 +52,7 @@ Copy `.env.example` to `.env.local` and set values there (secrets stay untracked
 
 ## Stack
 
-Next.js (App Router), React 19, TypeScript, Tailwind CSS v4, React Hook Form, Zod, OpenAI SDK, Playwright.
+Next.js (App Router), React 19, TypeScript, Tailwind CSS v4, React Hook Form, Zod, OpenAI SDK, Playwright (local) / `@sparticuz/chromium` (Vercel).
 
 ## API (short)
 

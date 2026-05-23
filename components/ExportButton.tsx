@@ -1,65 +1,92 @@
 "use client";
 
 import { Download, Loader2, Printer } from "lucide-react";
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import type { CVData } from "@/lib/cv-schema";
-import {
-  PDF_LENGTH_WARNING,
-  shouldWarnPdfLength,
-} from "@/lib/pdf";
+import { fetchCvPdfBlob, printPdfBlob, printPdfBlobUrl } from "@/lib/fetch-cv-pdf-client";
 import { cn } from "@/lib/cn";
 import { motionInteractive } from "@/lib/motion-styles";
 
 export function ExportButton({
   getCv,
+  getPdfBlob,
+  getPdfBlobUrl,
+  previewIframeRef,
+  previewBusy,
   compact,
 }: {
   getCv: () => CVData;
+  /** Cached PDF from live preview — avoids duplicate server renders. */
+  getPdfBlob: () => Blob | null;
+  /** Same object URL as the preview iframe (do not revoke from export/print). */
+  getPdfBlobUrl: () => string | null;
+  previewIframeRef: RefObject<HTMLIFrameElement | null>;
+  previewBusy: boolean;
   /** Smaller controls for the centered header strip. */
   compact?: boolean;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<"download" | "print" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const busy = busyAction !== null;
+
+  async function resolvePdfBlob(): Promise<Blob> {
+    const cached = getPdfBlob();
+    if (cached) return cached;
+    return fetchCvPdfBlob(getCv());
+  }
 
   async function downloadPdf() {
     const cv = getCv();
-    if (typeof window !== "undefined" && shouldWarnPdfLength(cv)) {
-      const ok = window.confirm(PDF_LENGTH_WARNING + "\n\nContinue with export?");
-      if (!ok) return;
-    }
-    setBusy(true);
+    setBusyAction("download");
     setErr(null);
     try {
-      const res = await fetch("/api/export-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cv }),
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(j?.error || res.statusText || "Export failed");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const cachedUrl = getPdfBlobUrl();
+      const blob = await resolvePdfBlob();
+      const url = cachedUrl ?? URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${(cv.meta.versionName || "cv").replace(/\s+/g, "-") || "cv"}.pdf`;
       a.click();
-      URL.revokeObjectURL(url);
+      if (!cachedUrl) URL.revokeObjectURL(url);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Export failed");
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
-  function printCv() {
-    const cv = getCv();
-    if (typeof window !== "undefined" && shouldWarnPdfLength(cv)) {
-      const ok = window.confirm(PDF_LENGTH_WARNING + "\n\nContinue with print?");
-      if (!ok) return;
+  async function printCv() {
+    if (previewBusy) {
+      setErr("PDF preview is still generating. Try again in a moment.");
+      return;
     }
-    window.print();
+
+    const cv = getCv();
+    setBusyAction("print");
+    setErr(null);
+    try {
+      const blob = getPdfBlob();
+      const blobUrl = getPdfBlobUrl();
+      const iframeWin = previewIframeRef.current?.contentWindow;
+
+      if (blob && iframeWin) {
+        iframeWin.focus();
+        window.setTimeout(() => iframeWin.print(), 150);
+        return;
+      }
+
+      if (blobUrl) {
+        printPdfBlobUrl(blobUrl);
+        return;
+      }
+
+      const pdfBlob = await fetchCvPdfBlob(cv);
+      printPdfBlob(pdfBlob);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Print failed");
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   const primary = compact
@@ -77,9 +104,9 @@ export function ExportButton({
     >
       <button
         type="button"
-        onClick={downloadPdf}
-        disabled={busy}
-        aria-busy={busy}
+        onClick={() => void downloadPdf()}
+        disabled={busy || previewBusy}
+        aria-busy={busyAction === "download"}
         aria-describedby={err ? "export-pdf-error" : undefined}
         className={cn(
           motionInteractive,
@@ -87,7 +114,7 @@ export function ExportButton({
           "hover:bg-violet-500 hover:brightness-105 active:brightness-95 disabled:opacity-60 motion-reduce:hover:brightness-100 motion-reduce:active:brightness-100",
         )}
       >
-        {busy ? (
+        {busyAction === "download" ? (
           <Loader2 className={compact ? "size-3.5 animate-spin" : "size-4 animate-spin"} aria-hidden />
         ) : (
           <Download className={compact ? "size-3.5" : "size-4"} aria-hidden />
@@ -96,10 +123,17 @@ export function ExportButton({
       </button>
       <button
         type="button"
-        onClick={printCv}
-        className={cn(motionInteractive, secondary)}
+        onClick={() => void printCv()}
+        disabled={busy || previewBusy}
+        aria-busy={busyAction === "print"}
+        aria-describedby={err ? "export-pdf-error" : undefined}
+        className={cn(motionInteractive, secondary, "disabled:opacity-60")}
       >
-        <Printer className={compact ? "size-3.5" : "size-4"} aria-hidden />
+        {busyAction === "print" ? (
+          <Loader2 className={compact ? "size-3.5 animate-spin" : "size-4 animate-spin"} aria-hidden />
+        ) : (
+          <Printer className={compact ? "size-3.5" : "size-4"} aria-hidden />
+        )}
         Print
       </button>
       {err && (

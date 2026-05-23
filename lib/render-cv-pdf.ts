@@ -1,15 +1,30 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
-import { chromium, type Browser } from "playwright";
+import { chromium as playwrightChromium, type Browser } from "playwright-core";
 import { getCvAccent } from "./cv-accents";
 import type { CVData } from "./cv-schema";
 
 let sharedBrowser: Browser | null = null;
 
+async function launchPdfBrowser(): Promise<Browser> {
+  if (process.env.VERCEL) {
+    const sparticuzChromium = await import("@sparticuz/chromium");
+    const chromium = sparticuzChromium.default;
+    return playwrightChromium.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+  }
+
+  const { chromium } = await import("playwright");
+  return chromium.launch({ headless: true });
+}
+
 async function getPdfBrowser(): Promise<Browser> {
   if (sharedBrowser?.isConnected()) return sharedBrowser;
-  sharedBrowser = await chromium.launch({ headless: true });
+  sharedBrowser = await launchPdfBrowser();
   return sharedBrowser;
 }
 
