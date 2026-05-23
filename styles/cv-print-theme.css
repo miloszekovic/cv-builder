@@ -101,3 +101,322 @@
 .cv-print-column-sidebar {
   min-height: 0;
 }
+
+/* ——— Template: Modern ——— */
+.cv-print-root[data-cv-template="modern"] {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 10pt;
+  --cv-print-rhythm: 1.2rem;
+  line-height: 1.45;
+}
+
+.cv-print-root[data-cv-template="modern"] .cv-print-section-title {
+  border-bottom: none;
+  border-left: 4px solid var(--cv-print-accent);
+  padding-left: 0.6rem;
+  padding-bottom: 0;
+  letter-spacing: 0.14em;
+  font-size: 8.5px;
+  color: #0f172a;
+}
+
+.cv-print-root[data-cv-template="modern"] .cv-print-name {
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.cv-print-root[data-cv-template="modern"] .cv-print-subtitle {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--cv-print-accent);
+}
+
+.cv-print-root[data-cv-template="modern"] .cv-print-job li {
+  list-style-type: square;
+}
+
+/* ——— Template: Minimal ——— */
+.cv-print-root[data-cv-template="minimal"] {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 9.75pt;
+  --cv-print-rhythm: 1.85rem;
+  color: #4b5563;
+  line-height: 1.65;
+}
+
+.cv-print-root[data-cv-template="minimal"] .cv-print-section-title {
+  border-bottom: none;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: #9ca3af;
+  font-size: 7.5px;
+  margin-bottom: 0.85rem;
+}
+
+.cv-print-root[data-cv-template="minimal"] .cv-print-name {
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.cv-print-root[data-cv-template="minimal"] .cv-print-subtitle {
+  font-style: normal;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.cv-print-root[data-cv-template="minimal"] .cv-print-main-section,
+.cv-print-root[data-cv-template="minimal"] .cv-print-experience-group {
+  padding-bottom: 0.25rem;
+}
+
+/* ——— Template: Executive ——— */
+.cv-print-root[data-cv-template="executive"] {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cv-print-rhythm: 1.15rem;
+  font-size: 9.75pt;
+  line-height: 1.42;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-name {
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cv-print-accent);
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-section-title {
+  border-bottom: none;
+  border-top: 2px solid #0f172a;
+  padding-top: 0.35rem;
+  padding-bottom: 0;
+  letter-spacing: 0.18em;
+  font-size: 7.5px;
+  color: #0f172a;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-page-header {
+  border-bottom: 4px solid #0f172a;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.35rem;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar {
+  background: #0f172a;
+  color: #cbd5e1;
+  border-radius: 0.65rem;
+  padding: 1rem 0.9rem;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar .cv-print-section-title {
+  border-top-color: var(--cv-print-accent);
+  color: #f8fafc;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar p,
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar li,
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar span {
+  color: #cbd5e1;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar .font-bold {
+  color: #f1f5f9;
+}
+
+.cv-print-root[data-cv-template="executive"] .cv-print-executive-sidebar .cv-print-detail-icon {
+  color: var(--cv-print-accent);
+}
+
+/* ——— Template: Studio ——— */
+.cv-print-root[data-cv-template="studio"] {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cv-print-rhythm: 1.4rem;
+  font-size: 10pt;
+  line-height: 1.48;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-name {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #18181b;
+  text-decoration: underline;
+  text-decoration-color: var(--cv-print-accent);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-subtitle {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  color: #52525b;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-section-title {
+  border-bottom: none;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: #52525b;
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-section-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.15em;
+  bottom: 0.15em;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--cv-print-accent);
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-column-main .cv-print-section-title::before {
+  display: block;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar {
+  background: var(--cv-print-accent);
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  padding: 1.1rem 1rem;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar .cv-print-section-title {
+  color: rgb(255 255 255 / 0.92);
+  padding-left: 0;
+  letter-spacing: 0.14em;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar .cv-print-section-title::before {
+  display: none;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar p,
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar li,
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar span {
+  color: rgb(255 255 255 / 0.88);
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar .font-bold {
+  color: #fff;
+}
+
+.cv-print-root[data-cv-template="studio"] .cv-print-studio-sidebar .cv-print-detail-icon {
+  color: rgb(255 255 255 / 0.95);
+}
+
+/* ——— Template: Mono ——— */
+.cv-print-root[data-cv-template="mono"] {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 9.5pt;
+  --cv-print-rhythm: 1.6rem;
+  line-height: 1.55;
+  color: #18181b;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-name {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #09090b;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-subtitle {
+  font-family: ui-monospace, monospace;
+  font-style: normal;
+  font-size: 10px;
+  color: #71717a;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-section-title {
+  border-bottom: none;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #09090b;
+  margin-bottom: 0.5rem;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-mono-stack {
+  border-top: 1px solid #d4d4d8;
+  padding-top: 1.25rem;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-mono-stack .cv-print-sidebar-section + .cv-print-sidebar-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed #e4e4e7;
+}
+
+.cv-print-root[data-cv-template="mono"] .cv-print-main-section + .cv-print-experience-group,
+.cv-print-root[data-cv-template="mono"] .cv-print-experience-group {
+  padding-top: 0.25rem;
+}
+
+/* ——— Template: Nordic ——— */
+.cv-print-root[data-cv-template="nordic"] {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  --cv-print-rhythm: 1.75rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.cv-print-nordic-page {
+  padding-top: 14mm !important;
+}
+
+.cv-print-root[data-cv-template="nordic"] .cv-print-name {
+  font-weight: 300;
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.cv-print-root[data-cv-template="nordic"] .cv-print-subtitle {
+  font-weight: 300;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.cv-print-root[data-cv-template="nordic"] .cv-print-section-title {
+  border-bottom: none;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  color: #cbd5e1;
+  font-size: 8px;
+}
+
+.cv-print-root[data-cv-template="nordic"] .cv-print-nordic-sidebar {
+  border-inline-start: 1px solid #f1f5f9;
+  padding-inline-start: 1.25rem;
+}
+
+.cv-print-root[data-cv-template="nordic"] .cv-print-column-main .cv-print-section-title,
+.cv-print-root[data-cv-template="nordic"] .cv-print-experience-group > .cv-print-section-title {
+  color: #94a3b8;
+}

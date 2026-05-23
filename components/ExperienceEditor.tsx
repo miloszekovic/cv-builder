@@ -4,7 +4,17 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
 import { EXPERIENCE_MONTH_OPTIONS } from "@/lib/experience-dates";
-import { formFieldClass, formLabelClass, formLabelControlStack, formSelectClass } from "@/lib/form-styles";
+import {
+  formDeleteButtonClass,
+  formFieldSoftClass,
+  formFieldsStackClass,
+  formLabelClass,
+  formLabelControlStack,
+  formNestedGroupClass,
+  formNestedGroupHeaderClass,
+  formNestedGroupTitleClass,
+  formSelectSoftClass,
+} from "@/lib/form-styles";
 import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
 
@@ -49,18 +59,15 @@ export function ExperienceEditor() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {fields.map((field, index) => (
-        <div
-          key={field.id}
-          className="motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px space-y-5 rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[0_2px_20px_-10px_rgb(0_0_0_/0.08)] ring-1 ring-zinc-950/4 motion-safe:hover:shadow-[0_12px_36px_-14px_rgb(0_0_0_/0.12)] dark:border-zinc-700/75 dark:bg-zinc-900/45 dark:ring-white/5 dark:motion-safe:hover:shadow-[0_12px_36px_-12px_rgb(0_0_0_/0.4)]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className={formLabelClass}>Role {index + 1}</span>
+        <div key={field.id} className={formNestedGroupClass}>
+          <div className={formNestedGroupHeaderClass}>
+            <span className={formNestedGroupTitleClass}>Role {index + 1}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                className="rounded-lg p-2 text-zinc-500 hover:bg-white/70 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-100"
                 disabled={index === 0}
                 onClick={() => move(index, index - 1)}
                 aria-label="Move experience up"
@@ -69,7 +76,7 @@ export function ExperienceEditor() {
               </button>
               <button
                 type="button"
-                className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                className="rounded-lg p-2 text-zinc-500 hover:bg-white/70 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-100"
                 disabled={index === fields.length - 1}
                 onClick={() => move(index, index + 1)}
                 aria-label="Move experience down"
@@ -78,7 +85,7 @@ export function ExperienceEditor() {
               </button>
               <button
                 type="button"
-                className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                className={formDeleteButtonClass}
                 onClick={() => remove(index)}
                 aria-label="Remove experience"
               >
@@ -86,26 +93,27 @@ export function ExperienceEditor() {
               </button>
             </div>
           </div>
+          <div className={formFieldsStackClass}>
           <label className={formLabelControlStack}>
             <span className={formLabelClass}>Role</span>
-            <input className={formFieldClass} {...register(`body.experience.${index}.role`)} />
+            <input className={formFieldSoftClass} {...register(`body.experience.${index}.role`)} />
           </label>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2">
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Company</span>
-              <input className={formFieldClass} {...register(`body.experience.${index}.company`)} />
+              <input className={formFieldSoftClass} {...register(`body.experience.${index}.company`)} />
             </label>
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Country</span>
               <input
-                className={formFieldClass}
+                className={formFieldSoftClass}
                 placeholder="e.g. Sweden"
                 {...register(`body.experience.${index}.country`)}
               />
             </label>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <fieldset className="space-y-3 sm:col-span-1">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <fieldset className="space-y-2 sm:col-span-1">
               <legend className={formLabelClass}>Start</legend>
               <div className="grid grid-cols-2 gap-3">
                 <Controller
@@ -113,7 +121,7 @@ export function ExperienceEditor() {
                   name={`body.experience.${index}.startMonth`}
                   render={({ field }) => (
                     <select
-                      className={formSelectClass}
+                      className={formSelectSoftClass}
                       value={field.value ?? ""}
                       onChange={(e) => {
                         const v = e.target.value;
@@ -131,7 +139,7 @@ export function ExperienceEditor() {
                 />
                 <input
                   type="number"
-                  className={formFieldClass}
+                  className={formFieldSoftClass}
                   placeholder="Year"
                   {...register(`body.experience.${index}.startYear`, {
                     setValueAs: (v) =>
@@ -140,7 +148,7 @@ export function ExperienceEditor() {
                 />
               </div>
             </fieldset>
-            <fieldset className="space-y-3 sm:col-span-1">
+            <fieldset className="space-y-2 sm:col-span-1">
               <legend className={formLabelClass}>End</legend>
               <Controller
                 control={control}
@@ -155,7 +163,7 @@ export function ExperienceEditor() {
                           name={`body.experience.${index}.endMonth`}
                           render={({ field: monthField }) => (
                             <select
-                              className={formSelectClass}
+                              className={formSelectSoftClass}
                               disabled={isPresent}
                               value={isPresent ? "" : (monthField.value ?? "")}
                               onChange={(e) => {
@@ -174,7 +182,7 @@ export function ExperienceEditor() {
                         />
                         <input
                           type="number"
-                          className={formFieldClass}
+                          className={formFieldSoftClass}
                           placeholder="Year"
                           disabled={isPresent}
                           value={
@@ -217,13 +225,14 @@ export function ExperienceEditor() {
           </div>
           <label className={formLabelControlStack}>
             <span className={formLabelClass}>Company / role intro</span>
-            <textarea rows={2} className={formFieldClass} {...register(`body.experience.${index}.intro`)} />
+            <textarea rows={2} className={formFieldSoftClass} {...register(`body.experience.${index}.intro`)} />
           </label>
           <BulletsEditor index={index} />
           <label className={formLabelControlStack}>
             <span className={formLabelClass}>Outro (learned / growth)</span>
-            <textarea rows={2} className={formFieldClass} {...register(`body.experience.${index}.outro`)} />
+            <textarea rows={2} className={formFieldSoftClass} {...register(`body.experience.${index}.outro`)} />
           </label>
+          </div>
         </div>
       ))}
       <button
@@ -255,16 +264,16 @@ function BulletsEditor({ index }: { index: number }) {
   return (
     <fieldset className="space-y-3">
       <legend className={formLabelClass}>Bullets</legend>
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {fields.map((f, bi) => (
           <div key={f.id} className="flex gap-2">
             <input
-              className={cn(formFieldClass, "min-w-0 flex-1")}
+              className={cn(formFieldSoftClass, "min-w-0 flex-1")}
               {...register(`body.experience.${index}.bullets.${bi}`)}
             />
             <button
               type="button"
-              className="shrink-0 rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+              className={formDeleteButtonClass}
               onClick={() => remove(bi)}
               aria-label="Remove bullet"
             >

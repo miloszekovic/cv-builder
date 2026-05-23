@@ -5,12 +5,17 @@ import type {
   SkillLibrary,
 } from "./cv-schema";
 import { SKILL_CATEGORY_LABELS } from "./cv-schema";
+import { normalizeCvTemplate } from "./cv-templates";
 
-/** Ensures `meta.accent` is set when binding accent radios in the form. */
+/** Ensures layout meta defaults when binding form controls. */
 export function withDefaultMetaAccent(cv: CVData): CVData {
   return {
     ...cv,
-    meta: { ...cv.meta, accent: cv.meta.accent ?? "teal" },
+    meta: {
+      ...cv.meta,
+      template: normalizeCvTemplate(cv.meta.template) ?? "classic",
+      accent: cv.meta.accent ?? "teal",
+    },
   };
 }
 
@@ -131,6 +136,7 @@ export const blankCvData = (): CVData => {
       versionName: "",
       targetRole: "",
       sidebarPosition: "right",
+      template: "classic",
       accent: "teal",
     },
     body: {
@@ -187,7 +193,7 @@ export function normalizeCvForForm(cv: CVData): CVData {
     ? cv.body.experience.map(normalizeExperienceRow)
     : b.body.experience;
   return {
-    meta: { ...b.meta, ...cv.meta },
+    meta: { ...b.meta, ...cv.meta, template: normalizeCvTemplate(cv.meta?.template) ?? b.meta.template },
     body: { ...b.body, ...cv.body, experience },
     sidebar: {
       ...b.sidebar,

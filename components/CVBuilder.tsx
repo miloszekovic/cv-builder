@@ -6,23 +6,20 @@ import {
   BookOpen,
   CheckCircle2,
   Copy,
-  FileJson,
   Plus,
   Save,
   Trash2,
-  Upload,
 } from "lucide-react";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import type { RefObject } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
-import { CVForm } from "@/components/CVForm";
+import { CVForm, CVFormModeTabs } from "@/components/CVForm";
 import { CVPreview } from "@/components/CVPreview";
 import { ExportButton } from "@/components/ExportButton";
 import { useCvPdfPreview } from "@/hooks/use-cv-pdf-preview";
@@ -36,9 +33,10 @@ import {
 import { localCvStorage } from "@/lib/storage";
 import type { GenerateCvInput } from "@/lib/openai";
 import { cn } from "@/lib/cn";
-import { formFieldClass, formSelectClass } from "@/lib/form-styles";
+import { formFieldClass, formSelectClass, editorSectionClass, editorWorkspaceBodyClass, editorWorkspaceShellClass, editorWorkspaceTabBarClass } from "@/lib/form-styles";
 import { motionInteractive } from "@/lib/motion-styles";
 import { ThemeSelect } from "@/components/ThemeSelect";
+import { ToolbarMoreMenu } from "@/components/ToolbarMoreMenu";
 import { CVBuilderMark, CVBuilderWordmark } from "@/components/CVBuilderLogo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ModalFadeShell } from "@/components/ModalFadeShell";
@@ -284,7 +282,6 @@ export function CVBuilder() {
               localCvStorage.saveCv(activeId, parsed.cv);
               setVersions(localCvStorage.listVersions());
             }}
-            themeSelect={<ThemeSelect embedded />}
             onLoadExample={() => setLoadDemoOpen(true)}
             tagline="Edit, preview, and export a concise CV. All fields are optional."
             getCv={() => form.getValues()}
@@ -300,38 +297,45 @@ export function CVBuilder() {
           tabIndex={-1}
           className="outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
-        <div className="grid gap-12 lg:grid-cols-[minmax(640px,1fr)_minmax(560px,720px)] lg:gap-16 xl:grid-cols-[minmax(720px,1fr)_minmax(600px,800px)] xl:gap-20">
-          <section aria-label="CV fields" className="min-w-0 space-y-10">
-            <form onSubmit={(e) => e.preventDefault()} noValidate>
-              <CVForm
-                mode={mode}
-                setMode={setMode}
-                skillLibrary={skillLibraryResolved}
-                onSkillLibraryChange={onSkillLibraryChange}
-                onGenerate={handleGenerate}
-                aiBusy={aiBusy}
-                aiError={aiError}
-              />
-            </form>
-          </section>
-          <aside
-            aria-labelledby="live-preview-heading"
-            className="flex min-h-0 min-w-0 flex-col gap-5 lg:sticky lg:top-10 lg:self-start"
-          >
-            <h2
-              id="live-preview-heading"
-              className="m-0 shrink-0 border-b border-zinc-100 pb-3 text-xl font-semibold tracking-tight text-zinc-900 dark:border-zinc-800/90 dark:text-zinc-50"
+        <div className={editorWorkspaceShellClass}>
+          <div className={editorWorkspaceTabBarClass}>
+            <CVFormModeTabs mode={mode} setMode={setMode} />
+          </div>
+          <div className={editorWorkspaceBodyClass}>
+            <section aria-label="CV fields" className="min-w-0 space-y-8">
+              <form onSubmit={(e) => e.preventDefault()} noValidate>
+                <CVForm
+                  mode={mode}
+                  skillLibrary={skillLibraryResolved}
+                  onSkillLibraryChange={onSkillLibraryChange}
+                  onGenerate={handleGenerate}
+                  aiBusy={aiBusy}
+                  aiError={aiError}
+                />
+              </form>
+            </section>
+            <aside
+              aria-labelledby="live-preview-heading"
+              className="flex min-h-0 min-w-0 flex-col lg:sticky lg:top-10 lg:self-start"
             >
-              Live preview
-            </h2>
-            <CVPreview
-              ref={previewIframeRef}
-              blobUrl={pdfPreview.blobUrl}
-              busy={pdfPreview.busy}
-              err={pdfPreview.err}
-              className="min-h-0 w-full max-h-[calc(100vh-5.5rem)]"
-            />
-          </aside>
+              <section className={cn(editorSectionClass, "space-y-4 motion-safe:hover:translate-y-0")}>
+                <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-zinc-100 pb-2.5 dark:border-zinc-800/90">
+                  <h2 id="live-preview-heading" className="m-0 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Live preview
+                  </h2>
+                  <p className="m-0 text-xs text-zinc-500 dark:text-zinc-400">Updates as you edit</p>
+                </div>
+                <CVPreview
+                  ref={previewIframeRef}
+                  blobUrl={pdfPreview.blobUrl}
+                  busy={pdfPreview.busy}
+                  err={pdfPreview.err}
+                  embedded
+                  className="min-h-0 w-full max-h-[calc(100vh-5.5rem)]"
+                />
+              </section>
+            </aside>
+          </div>
         </div>
         </main>
 
@@ -620,7 +624,6 @@ function Toolbar({
   onImportJsonClick,
   importRef,
   onImportFile,
-  themeSelect,
   onLoadExample,
   tagline,
   getCv,
@@ -640,7 +643,6 @@ function Toolbar({
   onImportJsonClick: () => void;
   importRef: RefObject<HTMLInputElement | null>;
   onImportFile: (f: File) => void;
-  themeSelect: ReactNode;
   onLoadExample: () => void;
   tagline: string;
   getCv: () => CVData;
@@ -650,13 +652,9 @@ function Toolbar({
   previewBusy: boolean;
 }) {
   const { register } = useFormContext<CVData>();
-  const jsonIoBtnClass = cn(
-    motionInteractive,
-    "inline-flex items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3.5 py-2.5 text-sm font-medium text-amber-950 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-amber-100/90 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-950/50",
-  );
 
   return (
-    <div className="mb-6 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
+    <div className="relative z-30 mb-6 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
       <div
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-x-6"
         role="group"
@@ -672,177 +670,132 @@ function Toolbar({
           </p>
         </div>
         <div
-          className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40 sm:self-start"
+          className="flex shrink-0 self-start rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
           role="group"
           aria-label="Theme"
         >
-          {themeSelect}
+          <ThemeSelect embedded />
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-4 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/70 lg:flex-row lg:items-center lg:justify-between lg:gap-x-6">
-        <div className="flex min-w-0 flex-col gap-3 items-start lg:flex-row lg:flex-wrap lg:items-center">
+      <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/70">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div
             className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/90 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/50"
             role="group"
-            aria-label="CV versions"
+            aria-label="CV version"
           >
-          <label
-            htmlFor="cv-version-select"
-            className="sr-only text-xs font-medium text-slate-600 dark:text-slate-400"
-          >
-            CV version
-          </label>
-          <select
-            id="cv-version-select"
-            className={cn(
-              formSelectClass,
-              "w-auto min-w-42 py-2 text-sm font-medium sm:text-base",
-            )}
-            value={activeId}
-            onChange={(e) => onSelectVersion(e.target.value)}
-          >
-            {versions.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor="cv-version-name"
-            className="flex min-w-0 flex-col gap-0.5 sm:max-w-[min(100%,15rem)] sm:flex-row sm:items-center sm:gap-2"
-          >
-            <span className="shrink-0 text-[0.6875rem] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
-              CV name
-            </span>
-            <input
-              id="cv-version-name"
-              {...register("meta.versionName")}
-              type="text"
-              autoComplete="off"
-              placeholder="Untitled"
+            <label htmlFor="cv-version-select" className="sr-only">
+              CV version
+            </label>
+            <select
+              id="cv-version-select"
               className={cn(
-                formFieldClass,
-                "min-h-10 w-full min-w-0 py-2 text-sm sm:max-w-56",
+                formSelectClass,
+                "min-h-10 w-52 shrink-0 py-2 text-sm font-medium sm:text-base",
               )}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={onNewVersion}
-            className={cn(
-              motionInteractive,
-              "inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3.5 py-2.5 text-sm font-medium text-emerald-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-emerald-100/90 dark:border-emerald-900/45 dark:bg-emerald-950/35 dark:text-emerald-100 dark:hover:bg-emerald-950/55",
-            )}
-            title="Create a new blank CV version"
-            aria-label="Create a new blank CV version"
-          >
-            <Plus className="size-4 shrink-0" aria-hidden />
-            New
-          </button>
-          <button
-            type="button"
-            onClick={onDuplicate}
-            className={cn(
-              motionInteractive,
-              "inline-flex items-center gap-2 rounded-xl border border-violet-200/80 bg-violet-50/95 px-3.5 py-2.5 text-sm font-medium text-violet-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
-            )}
-            title="Duplicate the current version"
-            aria-label="Duplicate the current version"
-          >
-            <Copy className="size-4 shrink-0" aria-hidden />
-            Duplicate
-          </button>
-          <button
-            type="button"
-            onClick={onDeleteRequest}
-            className={cn(
-              motionInteractive,
-              "inline-flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/95 px-3.5 py-2.5 text-sm font-medium text-red-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-red-100/85 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200 dark:hover:bg-red-950/50",
-            )}
-            title="Remove this version from this browser"
-            aria-label="Delete this CV version. Opens a confirmation dialog."
-          >
-            <Trash2 className="size-4 shrink-0" aria-hidden />
-            Delete
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            className={cn(
-              motionInteractive,
-              "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 motion-safe:active:scale-[0.99] dark:bg-violet-600 dark:hover:bg-violet-500",
-            )}
-            title="Save to this browser now (local storage)"
-            aria-label="Save CV and skill library to local storage now"
-          >
-            <Save className="size-4 shrink-0" aria-hidden />
-            Save
-          </button>
+              value={activeId}
+              onChange={(e) => onSelectVersion(e.target.value)}
+            >
+              {versions.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+            <label
+              htmlFor="cv-version-name"
+              className="flex min-w-0 shrink-0 items-center gap-2"
+            >
+              <span className="shrink-0 text-[0.6875rem] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                Name
+              </span>
+              <input
+                id="cv-version-name"
+                {...register("meta.versionName")}
+                type="text"
+                autoComplete="off"
+                placeholder="Untitled"
+                className={cn(
+                  formFieldClass,
+                  "min-h-10 w-52 shrink-0 py-2 text-sm",
+                )}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={onNewVersion}
+              className={cn(
+                motionInteractive,
+                "inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3.5 py-2.5 text-sm font-medium text-emerald-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-emerald-100/90 dark:border-emerald-900/45 dark:bg-emerald-950/35 dark:text-emerald-100 dark:hover:bg-emerald-950/55",
+              )}
+              title="Create a new blank CV version"
+              aria-label="Create a new blank CV version"
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              New
+            </button>
+            <button
+              type="button"
+              onClick={onDuplicate}
+              className={cn(
+                motionInteractive,
+                "inline-flex items-center gap-2 rounded-xl border border-violet-200/80 bg-violet-50/95 px-3.5 py-2.5 text-sm font-medium text-violet-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
+              )}
+              title="Duplicate the current version"
+              aria-label="Duplicate the current version"
+            >
+              <Copy className="size-4 shrink-0" aria-hidden />
+              Duplicate
+            </button>
+            <button
+              type="button"
+              onClick={onDeleteRequest}
+              className={cn(
+                motionInteractive,
+                "inline-flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/95 px-3.5 py-2.5 text-sm font-medium text-red-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-red-100/85 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200 dark:hover:bg-red-950/50",
+              )}
+              title="Delete this version"
+              aria-label="Delete this CV version. Opens a confirmation dialog."
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              className={cn(
+                motionInteractive,
+                "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 motion-safe:active:scale-[0.99] dark:bg-violet-600 dark:hover:bg-violet-500",
+              )}
+              title="Save to this browser now (local storage)"
+              aria-label="Save CV and skill library to local storage now"
+            >
+              <Save className="size-4 shrink-0" aria-hidden />
+              Save
+            </button>
           </div>
-
-        <div
-          className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
-          role="group"
-          aria-label="Import and export"
-        >
-          <button
-            type="button"
-            onClick={onExportJson}
-            className={jsonIoBtnClass}
-            title="Download this CV as JSON"
-            aria-label="Download this CV as JSON"
-          >
-            <FileJson className="size-4 shrink-0" aria-hidden />
-            Export JSON
-          </button>
-          <button
-            type="button"
-            onClick={onImportJsonClick}
-            className={jsonIoBtnClass}
-            title="Replace fields from a JSON file"
-            aria-label="Replace fields from a JSON file"
-          >
-            <Upload className="size-4 shrink-0" aria-hidden />
-            Import JSON
-          </button>
-          <input
-            ref={importRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            aria-label="Choose JSON file to import into this CV"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onImportFile(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            onClick={onLoadExample}
-            className={cn(
-              motionInteractive,
-              "inline-flex items-center gap-2 rounded-xl border border-dashed border-orange-300/90 bg-orange-50/95 px-3.5 py-2.5 text-sm font-medium text-orange-900 hover:bg-orange-100/85 dark:border-orange-800/55 dark:bg-orange-950/25 dark:text-orange-100 dark:hover:bg-orange-950/45",
-            )}
-            title="Load the built-in demo CV (overwrites current fields)"
-            aria-label="Load the built-in demo CV (overwrites current fields)"
-          >
-            <BookOpen className="size-4 shrink-0" aria-hidden />
-            Load demo
-          </button>
-        </div>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 lg:justify-end">
-          <ExportButton
-            getCv={getCv}
-            getPdfBlob={getPdfBlob}
-            getPdfBlobUrl={getPdfBlobUrl}
-            previewIframeRef={previewIframeRef}
-            previewBusy={previewBusy}
-            compact
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportButton
+              getCv={getCv}
+              getPdfBlob={getPdfBlob}
+              getPdfBlobUrl={getPdfBlobUrl}
+              previewBusy={previewBusy}
+              compact
+            />
+            <ToolbarMoreMenu
+              getCv={getCv}
+              getPdfBlob={getPdfBlob}
+              getPdfBlobUrl={getPdfBlobUrl}
+              previewIframeRef={previewIframeRef}
+              previewBusy={previewBusy}
+              onExportJson={onExportJson}
+              onImportJsonClick={onImportJsonClick}
+              importRef={importRef}
+              onImportFile={onImportFile}
+              onLoadExample={onLoadExample}
+            />
+          </div>
         </div>
       </div>
     </div>

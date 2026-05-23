@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
 import { chromium as playwrightChromium, type Browser, type Page } from "playwright-core";
-import { getCvAccent } from "./cv-accents";
 import type { CVData } from "./cv-schema";
+import { buildPdfFooterTemplate, pdfBottomMarginForTemplate } from "./cv-pdf-footer";
 
 /** Reuse one browser locally; serverless must launch per request (concurrency + freeze). */
 const isServerless = Boolean(process.env.VERCEL);
@@ -92,17 +92,14 @@ export async function buildCvPrintHtml(cv: CVData, css: string): Promise<string>
 async function renderPageToPdf(page: Page, html: string, cv: CVData): Promise<Buffer> {
   await page.setContent(html, { waitUntil: "load" });
   await page.emulateMedia({ media: "print" });
-  const accentHex = getCvAccent(cv.meta.accent).accent;
-  const footerTemplate = `<div style="width:100%;box-sizing:border-box;border-top:2px solid ${accentHex};padding:5px 16mm 0;display:flex;justify-content:flex-end;font-family:ui-sans-serif,system-ui,sans-serif,-apple-system,sans-serif;">
-<span style="font-size:8px;font-style:italic;font-weight:400;color:#94a3b8;letter-spacing:0.03em;line-height:1.25;">Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>
-</div>`;
+  const footerTemplate = buildPdfFooterTemplate(cv);
   const pdf = await page.pdf({
     format: "A4",
     printBackground: true,
     displayHeaderFooter: true,
     headerTemplate: "<div></div>",
     footerTemplate,
-    margin: { top: "16mm", bottom: "14mm", left: "8mm", right: "8mm" },
+    margin: { top: "16mm", bottom: pdfBottomMarginForTemplate(cv), left: "8mm", right: "8mm" },
   });
   return Buffer.from(pdf);
 }

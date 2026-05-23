@@ -8,6 +8,7 @@ import {
   Phone,
 } from "lucide-react";
 import { getCvAccent } from "@/lib/cv-accents";
+import { cvTemplateUsesSingleColumn, normalizeCvTemplate } from "@/lib/cv-templates";
 import type { CVData, Details, ExperienceItem, SkillCategoryId } from "@/lib/cv-schema";
 import {
   effectivePhotoMode,
@@ -66,7 +67,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center gap-2 text-[10px] leading-snug text-slate-800">
-      <span className="flex shrink-0 items-center justify-center text-(--cv-print-accent) [&>svg]:size-3">
+      <span className="cv-print-detail-icon flex shrink-0 items-center justify-center text-(--cv-print-accent) [&>svg]:size-3">
         {icon}
       </span>
       <span className="min-w-0 wrap-break-word">{children}</span>
@@ -314,6 +315,8 @@ export function CVPrint({
   variant?: "app" | "pdf";
 }) {
   const accent = getCvAccent(cv.meta.accent);
+  const templateId = normalizeCvTemplate(cv.meta.template) ?? "classic";
+  const singleColumn = cvTemplateUsesSingleColumn(templateId);
   const sidebarLeft = cv.meta.sidebarPosition === "left";
   const d = cv.sidebar.details;
   const photoMode = effectivePhotoMode(cv.body);
@@ -322,18 +325,30 @@ export function CVPrint({
   const showProfile = hasText(cv.body.profile);
 
   const header = (showName || showAvatar) && (
-    <header className="cv-print-page-header mb-8 flex gap-4 items-end">
+    <header
+      className={cn(
+        "cv-print-page-header mb-8 flex gap-4 items-end",
+        templateId === "nordic" && "cv-print-nordic-header flex-col items-center text-center gap-2 mb-10",
+        templateId === "mono" && "cv-print-mono-header border-b border-slate-300 pb-6 mb-7",
+      )}
+    >
       {photoMode === "image" && hasText(cv.body.image) && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={cv.body.image}
           alt=""
-          className="size-[68px] shrink-0 rounded-lg object-cover border border-slate-200/90"
+          className={cn(
+            "size-[68px] shrink-0 object-cover border border-slate-200/90",
+            templateId === "studio" ? "rounded-2xl" : templateId === "modern" ? "rounded-md" : "rounded-lg",
+          )}
         />
       )}
       {photoMode === "initials" && hasText(cv.body.name) && (
         <div
-          className="flex size-[68px] shrink-0 items-center justify-center rounded-lg border border-slate-200/90 text-[22px] font-bold text-(--cv-print-accent)"
+          className={cn(
+            "flex size-[68px] shrink-0 items-center justify-center border border-slate-200/90 text-[22px] font-bold text-(--cv-print-accent)",
+            templateId === "studio" ? "rounded-2xl" : templateId === "modern" ? "rounded-md" : "rounded-lg",
+          )}
           style={{
             backgroundImage: `linear-gradient(to bottom right, ${accent.initialsFrom}, ${accent.initialsTo})`,
           }}
@@ -342,7 +357,12 @@ export function CVPrint({
           {initialsFromName(cv.body.name)}
         </div>
       )}
-      <div className="min-w-0 flex-1">
+      <div
+        className={cn(
+          "min-w-0 flex-1",
+          templateId === "nordic" && "flex flex-col items-center",
+        )}
+      >
         {hasText(cv.body.name) && (
           <h1 className="cv-print-name m-0 text-[28px] font-bold leading-tight tracking-tight">
             {cv.body.name}
@@ -373,11 +393,52 @@ export function CVPrint({
     </div>
   );
 
-  const sidebarColumn = <SidebarColumn cv={cv} d={d} />;
+  const sidebarColumn = (
+    <div
+      className={cn(
+        templateId === "studio" && "cv-print-studio-sidebar",
+        templateId === "executive" && "cv-print-executive-sidebar",
+        templateId === "nordic" && "cv-print-nordic-sidebar",
+      )}
+    >
+      <SidebarColumn cv={cv} d={d} />
+    </div>
+  );
+
+  const bodyLayout = singleColumn ? (
+    <div className="cv-print-single-column space-y-8">
+      <div className="cv-print-column-main min-w-0">{mainColumn}</div>
+      <div className="cv-print-column-sidebar cv-print-mono-stack min-w-0">{sidebarColumn}</div>
+    </div>
+  ) : (
+    <div
+      className={cn(
+        "grid items-start gap-x-11 gap-y-0",
+        templateId === "nordic" && "gap-x-14",
+        templateId === "studio" && "gap-x-8",
+        sidebarLeft
+          ? "grid-cols-[228px_minmax(0,1fr)]"
+          : "grid-cols-[minmax(0,1fr)_228px]",
+      )}
+    >
+      {sidebarLeft ? (
+        <>
+          <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
+          <div className="cv-print-column-main min-w-0">{mainColumn}</div>
+        </>
+      ) : (
+        <>
+          <div className="cv-print-column-main min-w-0">{mainColumn}</div>
+          <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div
       data-cv-print-root
+      data-cv-template={templateId}
       className="cv-print-root bg-white text-slate-900 antialiased scheme-light"
       style={{ "--cv-print-accent": accent.accent } as CSSProperties}
     >
@@ -387,29 +448,11 @@ export function CVPrint({
           variant === "pdf"
             ? "px-[8mm] pt-0"
             : "px-[12mm] pt-[11mm]",
+          templateId === "nordic" && "cv-print-nordic-page",
         )}
       >
         {header}
-        <div
-          className={cn(
-            "grid items-start gap-x-11 gap-y-0",
-            sidebarLeft
-              ? "grid-cols-[228px_minmax(0,1fr)]"
-              : "grid-cols-[minmax(0,1fr)_228px]",
-          )}
-        >
-          {sidebarLeft ? (
-            <>
-              <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
-              <div className="cv-print-column-main min-w-0">{mainColumn}</div>
-            </>
-          ) : (
-            <>
-              <div className="cv-print-column-main min-w-0">{mainColumn}</div>
-              <div className="cv-print-column-sidebar min-w-0">{sidebarColumn}</div>
-            </>
-          )}
-        </div>
+        {bodyLayout}
       </div>
     </div>
   );

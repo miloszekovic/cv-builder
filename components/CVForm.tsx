@@ -12,6 +12,7 @@ import {
   PenLine,
   Phone,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import {
@@ -23,8 +24,21 @@ import {
 import type { CVData, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
 import type { CvAccentId } from "@/lib/cv-accents";
 import { CV_ACCENTS, CV_ACCENT_IDS } from "@/lib/cv-accents";
+import { cvTemplateUsesSingleColumn } from "@/lib/cv-templates";
+import { TemplatePicker } from "@/components/TemplatePicker";
 import { effectivePhotoMode } from "@/lib/cv-photo";
-import { formFieldClass, formLabelClass, formLabelControlStack, formSelectClass } from "@/lib/form-styles";
+import {
+  formFieldSectionClass,
+  formFieldSoftClass,
+  formFieldsStackClass,
+  formLabelClass,
+  formLabelControlStack,
+  formSelectSectionClass,
+  editorSectionClass,
+  editorSectionTitleClass,
+  formNestedGroupClass,
+  formDeleteButtonClass,
+} from "@/lib/form-styles";
 import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
 import { ExperienceEditor } from "@/components/ExperienceEditor";
@@ -37,9 +51,51 @@ const addFieldTriggerClass = cn(
   "text-[0.9375rem] font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300",
 );
 
-export function CVForm({
+export function CVFormModeTabs({
   mode,
   setMode,
+  className,
+  variant = "workspace",
+}: {
+  mode: "manual" | "ai";
+  setMode: (m: "manual" | "ai") => void;
+  className?: string;
+  variant?: "workspace" | "standalone";
+}) {
+  return (
+    <div
+      className={cn("grid w-full grid-cols-2 gap-2 sm:gap-2.5", className)}
+      role="tablist"
+      aria-label="Editor mode"
+    >
+      <ModeTab
+        id="manual"
+        tabId="tab-editor-manual"
+        panelId="panel-editor-manual"
+        current={mode}
+        setMode={setMode}
+        label="Manual"
+        description="Fill every field yourself"
+        icon={<PenLine className="size-4 shrink-0" aria-hidden />}
+        variant={variant}
+      />
+      <ModeTab
+        id="ai"
+        tabId="tab-editor-ai"
+        panelId="panel-editor-ai"
+        current={mode}
+        setMode={setMode}
+        label="AI-assisted"
+        description="Describe yourself, get a draft"
+        icon={<Sparkles className="size-4 shrink-0" aria-hidden />}
+        variant={variant}
+      />
+    </div>
+  );
+}
+
+export function CVForm({
+  mode,
   skillLibrary,
   onSkillLibraryChange,
   onGenerate,
@@ -47,7 +103,6 @@ export function CVForm({
   aiError,
 }: {
   mode: "manual" | "ai";
-  setMode: (m: "manual" | "ai") => void;
   skillLibrary: SkillLibrary;
   onSkillLibraryChange: (lib: SkillLibrary) => void;
   onGenerate: (input: GenerateCvInput) => Promise<void>;
@@ -56,36 +111,11 @@ export function CVForm({
 }) {
   const { register, watch, setValue } = useFormContext<CVData>();
   const sidebarPosition = watch("meta.sidebarPosition");
+  const templateId = watch("meta.template") ?? "classic";
+  const singleColumnTemplate = cvTemplateUsesSingleColumn(templateId);
 
   return (
-    <div className="space-y-10">
-      <div
-        className="grid w-full grid-cols-2 gap-2.5"
-        role="tablist"
-        aria-label="Editor mode"
-      >
-        <ModeTab
-          id="manual"
-          tabId="tab-editor-manual"
-          panelId="panel-editor-manual"
-          current={mode}
-          setMode={setMode}
-          label="Manual"
-          description="Fill every field yourself"
-          icon={<PenLine className="size-4 shrink-0" aria-hidden />}
-        />
-        <ModeTab
-          id="ai"
-          tabId="tab-editor-ai"
-          panelId="panel-editor-ai"
-          current={mode}
-          setMode={setMode}
-          label="AI-assisted"
-          description="Describe yourself, get a draft"
-          icon={<Sparkles className="size-4 shrink-0" aria-hidden />}
-        />
-      </div>
-
+    <div className="space-y-8">
       <div
         id="panel-editor-manual"
         role="tabpanel"
@@ -93,35 +123,45 @@ export function CVForm({
         hidden={mode !== "manual"}
         className="space-y-10"
       >
-        <Section title="Layout">
-          <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-              <span className={cn(formLabelClass, "shrink-0 sm:min-w-30")}>Sidebar</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = sidebarPosition === "right" ? "left" : "right";
-                  setValue("meta.sidebarPosition", next, { shouldDirty: true });
-                }}
-                className={cn(
-                  motionInteractive,
-                  "inline-flex w-fit max-w-full items-center gap-2 rounded-xl border border-violet-200/70 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
-                )}
-                title="Place the sidebar on the left or right of the main column"
-                aria-label={
-                  sidebarPosition === "right"
-                    ? "Sidebar is on the right. Activate to move it to the left."
-                    : "Sidebar is on the left. Activate to move it to the right."
-                }
-              >
-                {sidebarPosition === "right" ? (
-                  <PanelRight className="size-4 shrink-0" aria-hidden />
-                ) : (
-                  <PanelLeft className="size-4 shrink-0" aria-hidden />
-                )}
-                Sidebar on the {sidebarPosition}
-              </button>
+        <Section title="Design" description="Template, sidebar placement, and accent color for the PDF.">
+          <div className="space-y-7">
+            <div>
+              <p className={cn(formLabelClass, "mb-3.5")}>Template</p>
+              <TemplatePicker currentId={templateId} register={register} />
             </div>
+            {!singleColumnTemplate ? (
+              <div className="flex flex-col gap-3 border-t border-zinc-100 pt-6 sm:flex-row sm:items-center sm:gap-5 dark:border-zinc-800/80">
+                <span className={cn(formLabelClass, "shrink-0 sm:min-w-30")}>Sidebar</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = sidebarPosition === "right" ? "left" : "right";
+                    setValue("meta.sidebarPosition", next, { shouldDirty: true });
+                  }}
+                  className={cn(
+                    motionInteractive,
+                    "inline-flex w-fit max-w-full items-center gap-2 rounded-xl border border-violet-200/70 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
+                  )}
+                  title="Place the sidebar on the left or right of the main column"
+                  aria-label={
+                    sidebarPosition === "right"
+                      ? "Sidebar is on the right. Activate to move it to the left."
+                      : "Sidebar is on the left. Activate to move it to the right."
+                  }
+                >
+                  {sidebarPosition === "right" ? (
+                    <PanelRight className="size-4 shrink-0" aria-hidden />
+                  ) : (
+                    <PanelLeft className="size-4 shrink-0" aria-hidden />
+                  )}
+                  Sidebar on the {sidebarPosition}
+                </button>
+              </div>
+            ) : (
+              <p className="border-t border-zinc-100 pt-6 text-sm text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
+                Mono stacks everything in one column — sidebar placement does not apply.
+              </p>
+            )}
             <div className="border-t border-zinc-100 pt-6 dark:border-zinc-800/80">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                 <span className={cn(formLabelClass, "shrink-0 sm:min-w-30")}>Accent</span>
@@ -135,14 +175,14 @@ export function CVForm({
         </Section>
 
         <Section title="Title & role">
-          <div className="grid gap-5 sm:grid-cols-2 sm:gap-6">
+          <div className="grid gap-6 sm:grid-cols-2">
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Name</span>
-              <input className={formFieldClass} {...register("body.name")} />
+              <input className={formFieldSectionClass} {...register("body.name")} />
             </label>
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Main role</span>
-              <input className={formFieldClass} {...register("body.mainRole")} />
+              <input className={formFieldSectionClass} {...register("body.mainRole")} />
             </label>
           </div>
           <div className="mt-6 border-t border-zinc-100 pt-6 dark:border-zinc-800/80">
@@ -157,7 +197,7 @@ export function CVForm({
         >
           <textarea
             rows={5}
-            className={formFieldClass}
+            className={formFieldSectionClass}
             aria-labelledby="profile-intro-heading"
             placeholder=""
             {...register("body.profile")}
@@ -169,7 +209,7 @@ export function CVForm({
         </Section>
 
         <Section title="Sidebar — details">
-          <div className="grid grid-cols-1 gap-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             {(
               [
                 { key: "location" as const, lab: "Location", Icon: MapPin },
@@ -194,7 +234,7 @@ export function CVForm({
                   {lab}
                 </span>
                 <input
-                  className={formFieldClass}
+                  className={formFieldSectionClass}
                   {...register(`sidebar.details.${key}`)}
                 />
               </label>
@@ -224,7 +264,7 @@ export function CVForm({
             <span className={formLabelClass}>Interests</span>
             <textarea
               rows={3}
-              className={formFieldClass}
+              className={formFieldSectionClass}
               placeholder=""
               {...register("sidebar.hobbiesText")}
             />
@@ -277,6 +317,7 @@ function ModeTab({
   label,
   description,
   icon,
+  variant = "workspace",
 }: {
   id: "manual" | "ai";
   tabId: string;
@@ -286,8 +327,10 @@ function ModeTab({
   label: string;
   description?: string;
   icon: ReactNode;
+  variant?: "workspace" | "standalone";
 }) {
   const on = current === id;
+  const inWorkspace = variant === "workspace";
   return (
     <button
       id={tabId}
@@ -297,15 +340,20 @@ function ModeTab({
       aria-controls={panelId}
       className={cn(
         motionInteractive,
-        "flex w-full min-h-11 flex-col items-center justify-center gap-px rounded-lg border-0 px-2 py-2 text-center shadow-none sm:min-h-12 sm:px-4 sm:py-2.5",
+        "flex w-full min-h-11 flex-col items-center justify-center gap-px rounded-xl border-0 px-2 py-2 text-center shadow-none sm:min-h-13 sm:px-4 sm:py-2.5",
         "outline-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-violet-500/55 focus-visible:ring-offset-0",
         on
-          ? "bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
-          : cn(
-              "bg-zinc-100/90 text-zinc-900",
-              "hover:bg-zinc-200/75",
-              "dark:bg-zinc-800/50 dark:text-zinc-50 dark:hover:bg-zinc-700/65",
-            ),
+          ? "bg-violet-600 text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.4)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
+          : inWorkspace
+            ? cn(
+                "bg-white/90 text-zinc-900 ring-1 ring-zinc-200/80",
+                "hover:bg-white dark:bg-zinc-800/70 dark:text-zinc-50 dark:ring-zinc-600/70 dark:hover:bg-zinc-800",
+              )
+            : cn(
+                "bg-zinc-100/90 text-zinc-900",
+                "hover:bg-zinc-200/75",
+                "dark:bg-zinc-800/50 dark:text-zinc-50 dark:hover:bg-zinc-700/65",
+              ),
       )}
       onClick={() => setMode(id)}
     >
@@ -389,10 +437,10 @@ function Section({
 }) {
   return (
     <Reveal>
-      <section className="space-y-5 rounded-3xl border border-zinc-200/75 bg-white/90 p-6 shadow-[0_2px_24px_-12px_rgb(0_0_0_/0.08)] ring-1 ring-zinc-950/4 motion-safe:transition-[box-shadow,transform] motion-safe:duration-300 motion-safe:ease-out motion-safe:hover:-translate-y-px motion-safe:hover:shadow-[0_12px_40px_-16px_rgb(0_0_0_/0.12)] dark:border-zinc-700/70 dark:bg-zinc-900/50 dark:ring-white/6 dark:motion-safe:hover:shadow-[0_12px_40px_-12px_rgb(0_0_0_/0.45)] sm:p-7">
+      <section className={editorSectionClass}>
         <h2
           id={headingId}
-          className="border-b border-zinc-100 pb-3 text-xl font-semibold tracking-tight text-zinc-900 dark:border-zinc-800/90 dark:text-zinc-50"
+          className={editorSectionTitleClass}
         >
           {title}
         </h2>
@@ -509,10 +557,11 @@ function AiPanel({
       <p className="sr-only">
         The model fills the same fields as manual mode. Review before exporting.
       </p>
+      <div className={formFieldsStackClass}>
         <label className={formLabelControlStack}>
         <span className={formLabelClass}>Target role</span>
         <input
-          className={formFieldClass}
+          className={formFieldSectionClass}
           placeholder=""
           {...register("meta.targetRole")}
         />
@@ -521,16 +570,16 @@ function AiPanel({
         <span className={formLabelClass}>Your description</span>
         <textarea
           rows={8}
-          className={formFieldClass}
+          className={formFieldSectionClass}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </label>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2">
         <label className={formLabelControlStack}>
           <span className={formLabelClass}>Tone</span>
           <select
-            className={formSelectClass}
+            className={formSelectSectionClass}
             value={tone}
             onChange={(e) => setTone(e.target.value as GenerateCvInput["tone"])}
           >
@@ -542,7 +591,7 @@ function AiPanel({
         <label className={formLabelControlStack}>
           <span className={formLabelClass}>Length hint</span>
           <select
-            className={formSelectClass}
+            className={formSelectSectionClass}
             value={maxCvLength}
             onChange={(e) =>
               setMaxCvLength(e.target.value as NonNullable<GenerateCvInput["maxCvLength"]>)
@@ -552,6 +601,7 @@ function AiPanel({
             <option value="medium">Medium (2 pages)</option>
           </select>
         </label>
+      </div>
       </div>
       <button
         type="button"
@@ -566,7 +616,7 @@ function AiPanel({
         }
         className={cn(
           motionInteractive,
-          "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-[0.9375rem] font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 disabled:opacity-60",
+          "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-[0.9375rem] font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500",
         )}
         aria-busy={aiBusy}
       >
@@ -608,27 +658,27 @@ function EducationList() {
     );
   }
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {fields.map((f, i) => (
-        <div key={f.id} className="grid gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50/50 p-5 dark:border-zinc-700/80 dark:bg-zinc-800/25 sm:grid-cols-2">
+        <div key={f.id} className={cn(formNestedGroupClass, "grid gap-5 sm:grid-cols-2")}>
           <input
-            className={formFieldClass}
+            className={formFieldSoftClass}
             placeholder="University"
             {...register(`sidebar.education.${i}.university`)}
           />
           <div className="flex gap-2">
             <input
-              className={cn(formFieldClass, "min-w-0 flex-1")}
+              className={cn(formFieldSoftClass, "min-w-0 flex-1")}
               placeholder="Title / degree"
               {...register(`sidebar.education.${i}.title`)}
             />
             <button
               type="button"
-              className="shrink-0 rounded-xl border border-zinc-200/90 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-zinc-600 dark:text-red-400 dark:hover:bg-red-950/40"
+              className={formDeleteButtonClass}
               onClick={() => remove(i)}
               aria-label={`Remove education entry ${i + 1}`}
             >
-              Remove
+              <Trash2 className="size-4" aria-hidden />
             </button>
           </div>
         </div>
@@ -662,31 +712,31 @@ function CertificatesList() {
     );
   }
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {fields.map((f, i) => (
-        <div key={f.id} className="flex flex-wrap gap-2 items-end">
+        <div key={f.id} className={cn(formNestedGroupClass, "flex flex-wrap items-end gap-3")}>
           <label className={formLabelControlStack}>
             <span className={formLabelClass}>Year</span>
             <input
               type="number"
-              className={cn(formFieldClass, "w-24")}
+              className={cn(formFieldSoftClass, "w-24")}
               {...register(`sidebar.certificates.${i}.year`, {
                 setValueAs: (v) => (v === "" ? undefined : Number(v)),
               })}
             />
           </label>
           <input
-            className={cn(formFieldClass, "min-w-48 flex-1")}
+            className={cn(formFieldSoftClass, "min-w-48 flex-1")}
             placeholder="Certificate name"
             {...register(`sidebar.certificates.${i}.name`)}
           />
           <button
             type="button"
-            className="rounded-xl border border-zinc-200/90 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-zinc-600 dark:text-red-400 dark:hover:bg-red-950/40"
+            className={formDeleteButtonClass}
             onClick={() => remove(i)}
             aria-label={`Remove certificate row ${i + 1}`}
           >
-            Remove
+            <Trash2 className="size-4" aria-hidden />
           </button>
         </div>
       ))}
@@ -716,27 +766,37 @@ function LanguagesList() {
     );
   }
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {fields.map((f, i) => (
-        <div key={f.id} className="flex flex-wrap gap-2">
-          <input
-            className={cn(formFieldClass, "min-w-32 flex-1")}
-            placeholder="Language"
-            {...register(`sidebar.languages.${i}.name`)}
-          />
-          <input
-            className={cn(formFieldClass, "min-w-32 flex-1")}
-            placeholder="Level"
-            {...register(`sidebar.languages.${i}.level`)}
-          />
-          <button
-            type="button"
-            className="rounded-xl border border-zinc-200/90 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-zinc-600 dark:text-red-400 dark:hover:bg-red-950/40"
-            onClick={() => remove(i)}
-            aria-label={`Remove language row ${i + 1}`}
-          >
-            Remove
-          </button>
+        <div key={f.id} className={formNestedGroupClass}>
+          <div className="flex items-start gap-3">
+            <div className="grid min-w-0 flex-1 gap-5 sm:grid-cols-2">
+            <label className={formLabelControlStack}>
+              <span className={formLabelClass}>Language</span>
+              <input
+                className={formFieldSoftClass}
+                placeholder="e.g. English"
+                {...register(`sidebar.languages.${i}.name`)}
+              />
+            </label>
+            <label className={formLabelControlStack}>
+              <span className={formLabelClass}>Level</span>
+              <input
+                className={formFieldSoftClass}
+                placeholder="e.g. Native, B2"
+                {...register(`sidebar.languages.${i}.level`)}
+              />
+            </label>
+            </div>
+            <button
+              type="button"
+              className={formDeleteButtonClass}
+              onClick={() => remove(i)}
+              aria-label={`Remove language entry ${i + 1}`}
+            >
+              <Trash2 className="size-4" aria-hidden />
+            </button>
+          </div>
         </div>
       ))}
       <button
