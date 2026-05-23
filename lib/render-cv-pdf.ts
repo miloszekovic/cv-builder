@@ -7,13 +7,25 @@ import type { CVData } from "./cv-schema";
 
 let sharedBrowser: Browser | null = null;
 
+/** Matches @sparticuz/chromium@147.0.2 — used when Vercel omits the local bin/ trace. */
+const SPARTICUZ_CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v147.0.2/chromium-v147.0.2-pack.x64.tar";
+
+async function resolveSparticuzExecutable(
+  chromium: Awaited<typeof import("@sparticuz/chromium")>["default"],
+): Promise<string> {
+  const binPath = path.join(process.cwd(), "node_modules/@sparticuz/chromium/bin");
+  if (fs.existsSync(binPath)) return chromium.executablePath(binPath);
+  return chromium.executablePath(SPARTICUZ_CHROMIUM_PACK_URL);
+}
+
 async function launchPdfBrowser(): Promise<Browser> {
   if (process.env.VERCEL) {
     const sparticuzChromium = await import("@sparticuz/chromium");
     const chromium = sparticuzChromium.default;
     return playwrightChromium.launch({
       args: chromium.args,
-      executablePath: await chromium.executablePath(),
+      executablePath: await resolveSparticuzExecutable(chromium),
       headless: true,
     });
   }
