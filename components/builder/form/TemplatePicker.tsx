@@ -6,8 +6,9 @@ import type { UseFormRegister } from "react-hook-form";
 import type { CVData } from "@/lib/cv-schema";
 import type { CvTemplateId } from "@/lib/cv-templates";
 import { CV_TEMPLATE_IDS, CV_TEMPLATES } from "@/lib/cv-templates";
+import { Button } from "@/components/ui/Button";
+import { SelectableCard } from "@/components/ui/SelectableCard";
 import { cn } from "@/lib/cn";
-import { motionInteractive } from "@/lib/motion-styles";
 
 const CARD_WIDTH = 148;
 const SCROLL_STEP = CARD_WIDTH + 12;
@@ -54,32 +55,33 @@ export function TemplatePicker({
     scrollRef.current?.scrollBy({ left: dir * SCROLL_STEP, behavior: "smooth" });
   };
 
-  const navBtnClass = cn(
-    motionInteractive,
-    "absolute top-1/2 z-10 flex size-9 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200/90 bg-white/95 text-zinc-700 shadow-md backdrop-blur-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/95 dark:text-zinc-200 dark:hover:bg-zinc-800",
-  );
+  const navBtnPosition = (side: "left" | "right") =>
+    cn(
+      "absolute top-1/2 -translate-y-1/2",
+      side === "left" ? "left-0 -translate-x-1/2" : "right-0 translate-x-1/2",
+    );
 
   return (
     <div className="relative">
       {canScrollLeft ? (
-        <button
-          type="button"
-          className={cn(navBtnClass, "left-0 -translate-x-1/2")}
+        <Button
+          variant="nav"
+          className={navBtnPosition("left")}
           aria-label="Scroll templates left"
           onClick={() => scrollBy(-1)}
         >
           <ChevronLeft className="size-5" aria-hidden />
-        </button>
+        </Button>
       ) : null}
       {canScrollRight ? (
-        <button
-          type="button"
-          className={cn(navBtnClass, "right-0 translate-x-1/2")}
+        <Button
+          variant="nav"
+          className={navBtnPosition("right")}
           aria-label="Scroll templates right"
           onClick={() => scrollBy(1)}
         >
           <ChevronRight className="size-5" aria-hidden />
-        </button>
+        </Button>
       ) : null}
 
       <div
@@ -99,18 +101,12 @@ export function TemplatePicker({
           const selected = currentId === id;
           const opt = CV_TEMPLATES[id];
           return (
-            <label
+            <SelectableCard
               key={id}
+              selected={selected}
               data-template-id={id}
               style={{ width: CARD_WIDTH }}
-              className={cn(
-                motionInteractive,
-                "flex shrink-0 cursor-pointer snap-start flex-col gap-2.5 rounded-2xl border p-3 outline-hidden",
-                "focus-within:ring-2 focus-within:ring-violet-500/55 focus-within:ring-offset-2 focus-within:ring-offset-white dark:focus-within:ring-offset-zinc-950",
-                selected
-                  ? "border-violet-400/80 bg-violet-50/90 ring-2 ring-violet-500/35 dark:border-violet-700/70 dark:bg-violet-950/40"
-                  : "border-zinc-200/80 bg-zinc-50/60 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700/80 dark:bg-zinc-800/30 dark:hover:border-zinc-600",
-              )}
+              className="shrink-0 snap-start gap-2.5 rounded-2xl p-3"
             >
               <input type="radio" value={id} className="sr-only" {...register("meta.template")} />
               <TemplatePreview id={id} selected={selected} hue={opt.previewHue} />
@@ -122,7 +118,7 @@ export function TemplatePicker({
                   {opt.tagline}
                 </span>
               </span>
-            </label>
+            </SelectableCard>
           );
         })}
       </div>

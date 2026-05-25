@@ -71,12 +71,12 @@ export function loadPrintCss(): string {
 
 /** Dynamic imports keep `react-dom/server` out of the App Router static graph (Next 16 / Turbopack). */
 export async function buildCvPrintHtml(cv: CVData, css: string): Promise<string> {
-  const [{ renderToStaticMarkup }, { CVPrint }] = await Promise.all([
+  const [{ renderToStaticMarkup }, { Document }] = await Promise.all([
     import("react-dom/server"),
-    import("@/components/print/CVPrint"),
+    import("@/components/print/Document"),
   ]);
   const inner = renderToStaticMarkup(
-    createElement(CVPrint, { cv, variant: "pdf" }),
+    createElement(Document, { cv, variant: "pdf" }),
   );
   return `<!DOCTYPE html>
 <html lang="en">

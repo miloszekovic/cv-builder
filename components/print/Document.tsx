@@ -306,7 +306,7 @@ function SidebarColumn({
   );
 }
 
-export function CVPrint({
+export function Document({
   cv,
   variant = "app",
 }: {

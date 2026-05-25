@@ -13,8 +13,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { createPortal } from "react-dom";
 import type { CVData } from "@/lib/cv-schema";
 import { printCvFromPreview } from "@/lib/print-cv-from-preview";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { motionInteractive } from "@/lib/motion-styles";
 
 const MENU_WIDTH = 208;
 
@@ -81,10 +81,7 @@ export function ToolbarMoreMenu({
     };
   }, [open, updateMenuPos]);
 
-  const itemClass = cn(
-    motionInteractive,
-    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-800 hover:bg-zinc-100/90 disabled:opacity-60 dark:text-zinc-100 dark:hover:bg-zinc-800/80",
-  );
+  const itemClass = "disabled:opacity-60";
 
   async function handlePrint() {
     setPrintBusy(true);
@@ -113,8 +110,8 @@ export function ToolbarMoreMenu({
             style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}
             className="fixed z-50 rounded-2xl border border-zinc-200/90 bg-white p-1.5 shadow-[0_16px_48px_-12px_rgb(0_0_0_/0.18)] ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10"
           >
-            <button
-              type="button"
+            <Button
+              variant="menu-item"
               role="menuitem"
               className={itemClass}
               disabled={printBusy || previewBusy}
@@ -126,10 +123,10 @@ export function ToolbarMoreMenu({
                 <Printer className="size-4 shrink-0 text-zinc-600 dark:text-zinc-300" aria-hidden />
               )}
               Print
-            </button>
-            <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" role="separator" />
-            <button
-              type="button"
+            </Button>
+            <div className="my-1 border-t border-zinc-200/70 dark:border-zinc-800" role="separator" />
+            <Button
+              variant="menu-item"
               role="menuitem"
               className={itemClass}
               onClick={() => {
@@ -139,9 +136,9 @@ export function ToolbarMoreMenu({
             >
               <FileJson className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
               Export JSON
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="menu-item"
               role="menuitem"
               className={itemClass}
               onClick={() => {
@@ -151,7 +148,7 @@ export function ToolbarMoreMenu({
             >
               <Upload className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
               Import JSON
-            </button>
+            </Button>
             <input
               ref={importRef}
               type="file"
@@ -164,9 +161,9 @@ export function ToolbarMoreMenu({
                 e.target.value = "";
               }}
             />
-            <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" role="separator" />
-            <button
-              type="button"
+            <div className="my-1 border-t border-zinc-200/70 dark:border-zinc-800" role="separator" />
+            <Button
+              variant="menu-item"
               role="menuitem"
               className={itemClass}
               onClick={() => {
@@ -176,7 +173,7 @@ export function ToolbarMoreMenu({
             >
               <BookOpen className="size-4 shrink-0 text-orange-600 dark:text-orange-400" aria-hidden />
               Load demo CV
-            </button>
+            </Button>
           </div>,
           document.body,
         )
@@ -184,17 +181,14 @@ export function ToolbarMoreMenu({
 
   return (
     <div ref={rootRef} className="relative">
-      <button
+      <Button
         ref={buttonRef}
-        type="button"
+        variant="outline"
+        size="sm"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          motionInteractive,
-          "inline-flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-3.5 py-2.5 text-sm font-medium text-zinc-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/80",
-          open && "ring-2 ring-violet-500/40",
-        )}
+        className={cn(open && "ring-2 ring-violet-500/40")}
       >
         <MoreHorizontal className="size-4 shrink-0" aria-hidden />
         More
@@ -202,7 +196,7 @@ export function ToolbarMoreMenu({
           className={cn("size-3.5 shrink-0 opacity-60 transition-transform", open && "rotate-180")}
           aria-hidden
         />
-      </button>
+      </Button>
       {menu}
     </div>
   );

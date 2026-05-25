@@ -50,7 +50,7 @@ function CodeMarkPaths({ gradId }: { gradId: string }) {
 }
 
 /** `</>` mark only (gradient stroke). */
-export function CVBuilderMark({ className }: { className?: string }) {
+export function LogoMark({ className }: { className?: string }) {
   const gradId = `${useId().replace(/:/g, "")}-code`;
   return (
     <svg
@@ -66,12 +66,12 @@ export function CVBuilderMark({ className }: { className?: string }) {
 }
 
 /** Gradient “CVbuilder” title text. */
-export function CVBuilderWordmark({ className }: { className?: string }) {
+export function LogoWordmark({ className }: { className?: string }) {
   return <span className={cn(WORDMARK_CLASS, className)}>CVbuilder</span>;
 }
 
 /** Mark + wordmark in one inline cluster. */
-export function CVBuilderLogo({ className }: Props) {
+export function Logo({ className }: Props) {
   return (
     <span
       className={cn(
@@ -79,8 +79,8 @@ export function CVBuilderLogo({ className }: Props) {
         className,
       )}
     >
-      <CVBuilderMark />
-      <CVBuilderWordmark />
+      <LogoMark />
+      <LogoWordmark />
     </span>
   );
 }

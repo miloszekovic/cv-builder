@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 import { Loader2 } from "lucide-react";
 import { forwardRef } from "react";
 
-export const CVPreview = forwardRef<
+export const Preview = forwardRef<
   HTMLIFrameElement,
   {
     blobUrl: string | null;
@@ -13,16 +13,23 @@ export const CVPreview = forwardRef<
     className?: string;
     /** Renders only the iframe frame — use inside a matching editor section shell. */
     embedded?: boolean;
+    /** Fill available height instead of the default clamp (e.g. fullscreen modal). */
+    fillHeight?: boolean;
   }
->(function CVPreview({ blobUrl, busy, err, className, embedded = false }, ref) {
+>(function Preview(
+  { blobUrl, busy, err, className, embedded = false, fillHeight = false },
+  ref,
+) {
   const showPlaceholder = !blobUrl && !busy && !err;
 
   const frame = (
     <div
       className={cn(
-        "relative flex h-[clamp(416px,calc((100vh-9rem)*0.8),896px)] flex-col overflow-hidden bg-white",
+        fillHeight
+          ? "relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white"
+          : "relative flex h-[clamp(416px,calc((100vh-9rem)*0.8),896px)] flex-col overflow-hidden bg-white",
         embedded
-          ? "rounded-xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/80"
+          ? "rounded-xl ring-1 ring-zinc-300/70 shadow-[0_1px_3px_rgb(0_0_0_/0.06)] dark:ring-zinc-700/80 dark:shadow-none"
           : "rounded-2xl border border-zinc-300/50 shadow-[0_2px_16px_-6px_rgb(0_0_0_/0.12)] dark:border-zinc-600/60 dark:bg-zinc-950",
       )}
     >

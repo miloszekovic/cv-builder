@@ -1,5 +1,5 @@
-import { CVBuilder } from "@/components/CVBuilder";
+import { Builder } from "@/components/builder/Builder";
 
 export default function Home() {
-  return <CVBuilder />;
+  return <Builder />;
 }

@@ -11,12 +11,8 @@ import {
   formLabelClass,
   formNestedGroupClass,
   formNestedGroupTitleClass,
-  formSkillsPrimaryButtonClass,
-  formSkillsRemoveButtonClass,
-  formSkillsTagOffClass,
-  formSkillsTagOnClass,
 } from "@/lib/form-styles";
-import { motionInteractive } from "@/lib/motion-styles";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
 const CATEGORY_ORDER: SkillCategoryId[] = [
@@ -132,18 +128,18 @@ function CategoryBlock({
         {libraryTags.map((tag) => {
           const on = visibleTags.includes(tag);
           return (
-            <button
+            <Button
               key={tag}
-              type="button"
+              variant="tag"
+              selected={on}
               onClick={() => onToggleVisible(tag, !on)}
-              className={cn(motionInteractive, on ? formSkillsTagOnClass : formSkillsTagOffClass)}
               aria-pressed={on}
               aria-label={
                 on ? `${tag}, visible on CV. Click to hide from CV.` : `${tag}, hidden on CV. Click to show on CV.`
               }
             >
               {tag}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -162,9 +158,9 @@ function CategoryBlock({
             }
           }}
         />
-        <button
-          type="button"
-          className={cn(motionInteractive, formSkillsPrimaryButtonClass)}
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => {
             onAddLibraryTag(draft);
             setDraft("");
@@ -173,15 +169,14 @@ function CategoryBlock({
         >
           <Plus className="size-3.5" aria-hidden />
           Add
-        </button>
+        </Button>
       </div>
       <p className={formLabelClass}>Remove from library</p>
       <div className="flex flex-wrap gap-2 text-sm text-zinc-500 dark:text-zinc-400">
         {libraryTags.map((tag) => (
-          <button
+          <Button
             key={`rm-${tag}`}
-            type="button"
-            className={cn(motionInteractive, formSkillsRemoveButtonClass)}
+            variant="tag-remove"
             onClick={() =>
               onLibraryTagsChange(libraryTags.filter((t) => t !== tag))
             }
@@ -190,7 +185,7 @@ function CategoryBlock({
           >
             <X className="size-3" aria-hidden />
             {tag}
-          </button>
+          </Button>
         ))}
       </div>
     </section>

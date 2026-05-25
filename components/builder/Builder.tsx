@@ -6,6 +6,7 @@ import {
   BookOpen,
   CheckCircle2,
   Copy,
+  Eye,
   Plus,
   Save,
   Trash2,
@@ -19,9 +20,10 @@ import {
 import type { RefObject } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
-import { CVForm, CVFormModeTabs } from "@/components/CVForm";
-import { CVPreview } from "@/components/CVPreview";
-import { ExportButton } from "@/components/ExportButton";
+import { Form, FormModeTabs } from "@/components/builder/form/Form";
+import { Preview } from "@/components/builder/preview/Preview";
+import { Button } from "@/components/ui/Button";
+import { ExportButton } from "@/components/builder/toolbar/ExportButton";
 import { useCvPdfPreview } from "@/hooks/use-cv-pdf-preview";
 import { cvDataSchema, type CVData, type SkillLibrary } from "@/lib/cv-schema";
 import {
@@ -33,15 +35,16 @@ import {
 import { localCvStorage } from "@/lib/storage";
 import type { GenerateCvInput } from "@/lib/openai";
 import { cn } from "@/lib/cn";
-import { formFieldClass, formSelectClass, editorSectionClass, editorWorkspaceBodyClass, editorWorkspaceShellClass, editorWorkspaceTabBarClass } from "@/lib/form-styles";
-import { motionInteractive } from "@/lib/motion-styles";
-import { ThemeSelect } from "@/components/ThemeSelect";
-import { ToolbarMoreMenu } from "@/components/ToolbarMoreMenu";
-import { CVBuilderMark, CVBuilderWordmark } from "@/components/CVBuilderLogo";
-import { SiteFooter } from "@/components/SiteFooter";
-import { ModalFadeShell } from "@/components/ModalFadeShell";
+import { formFieldClass, formSelectClass, editorPreviewSectionClass, editorSectionClass, editorWorkspaceBodyClass, editorWorkspaceShellClass, editorWorkspaceTabBarClass } from "@/lib/form-styles";
+import { ThemeSelect } from "@/components/builder/toolbar/ThemeSelect";
+import { ToolbarMoreMenu } from "@/components/builder/toolbar/ToolbarMoreMenu";
+import { LogoMark, LogoWordmark } from "@/components/layout/Logo";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { ModalFadeShell } from "@/components/ui/ModalFadeShell";
+import { ModalScrim } from "@/components/ui/ModalScrim";
+import { PreviewModal } from "@/components/builder/preview/PreviewModal";
 
-export function CVBuilder() {
+export function Builder() {
   const [hydrated, setHydrated] = useState(false);
   const [versions, setVersions] = useState(() =>
     typeof window !== "undefined" ? localCvStorage.listVersions() : [],
@@ -58,6 +61,7 @@ export function CVBuilder() {
   const [deleteVersionOpen, setDeleteVersionOpen] = useState(false);
   const [loadDemoOpen, setLoadDemoOpen] = useState(false);
   const [saveFeedbackVisible, setSaveFeedbackVisible] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const saveFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
@@ -138,13 +142,15 @@ export function CVBuilder() {
   }, []);
 
   useEffect(() => {
-    const modalOpen = deleteVersionOpen || loadDemoOpen || saveFeedbackVisible;
+    const modalOpen =
+      deleteVersionOpen || loadDemoOpen || saveFeedbackVisible || previewOpen;
     if (!modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         setDeleteVersionOpen(false);
         setLoadDemoOpen(false);
+        setPreviewOpen(false);
         dismissSaveFeedback();
       }
     };
@@ -155,7 +161,7 @@ export function CVBuilder() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [deleteVersionOpen, loadDemoOpen, saveFeedbackVisible, dismissSaveFeedback]);
+  }, [deleteVersionOpen, loadDemoOpen, saveFeedbackVisible, previewOpen, dismissSaveFeedback]);
 
   useEffect(() => {
     return () => {
@@ -299,12 +305,12 @@ export function CVBuilder() {
         >
         <div className={editorWorkspaceShellClass}>
           <div className={editorWorkspaceTabBarClass}>
-            <CVFormModeTabs mode={mode} setMode={setMode} />
+            <FormModeTabs mode={mode} setMode={setMode} />
           </div>
           <div className={editorWorkspaceBodyClass}>
             <section aria-label="CV fields" className="min-w-0 space-y-8">
               <form onSubmit={(e) => e.preventDefault()} noValidate>
-                <CVForm
+                <Form
                   mode={mode}
                   skillLibrary={skillLibraryResolved}
                   onSkillLibraryChange={onSkillLibraryChange}
@@ -316,25 +322,35 @@ export function CVBuilder() {
             </section>
             <aside
               aria-labelledby="live-preview-heading"
-              className="flex min-h-0 min-w-0 flex-col lg:sticky lg:top-10 lg:self-start"
+              className="hidden min-h-0 min-w-0 flex-col lg:flex lg:sticky lg:top-8 lg:z-10 lg:max-h-[calc(100dvh-4rem)] lg:self-start"
             >
-              <section className={cn(editorSectionClass, "space-y-4 motion-safe:hover:translate-y-0")}>
-                <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-zinc-100 pb-2.5 dark:border-zinc-800/90">
+              <section className={cn(editorPreviewSectionClass, "motion-safe:hover:translate-y-0")}>
+                <div className="border-b border-zinc-200/80 pb-2.5 dark:border-zinc-800/90">
                   <h2 id="live-preview-heading" className="m-0 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                     Live preview
                   </h2>
-                  <p className="m-0 text-xs text-zinc-500 dark:text-zinc-400">Updates as you edit</p>
                 </div>
-                <CVPreview
-                  ref={previewIframeRef}
+                <Preview
                   blobUrl={pdfPreview.blobUrl}
                   busy={pdfPreview.busy}
                   err={pdfPreview.err}
                   embedded
-                  className="min-h-0 w-full max-h-[calc(100vh-5.5rem)]"
+                  className="min-h-0 w-full max-h-[min(896px,calc(100dvh-6rem))]"
                 />
               </section>
             </aside>
+            <div
+              className="pointer-events-none fixed left-0 top-0 -z-10 h-px w-px overflow-hidden opacity-0 lg:hidden"
+              aria-hidden
+            >
+              <Preview
+                ref={previewIframeRef}
+                blobUrl={pdfPreview.blobUrl}
+                busy={pdfPreview.busy}
+                err={pdfPreview.err}
+                embedded
+              />
+            </div>
           </div>
         </div>
         </main>
@@ -342,6 +358,38 @@ export function CVBuilder() {
         <SiteFooter />
       </div>
 
+      {typeof document !== "undefined" &&
+        createPortal(
+          <Button
+            onClick={() => setPreviewOpen(true)}
+            className={cn(
+              "fixed z-40 lg:hidden",
+              "bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]",
+              previewOpen && "pointer-events-none opacity-0",
+            )}
+            aria-haspopup="dialog"
+            aria-expanded={previewOpen}
+          >
+            <Eye className="size-4 shrink-0" aria-hidden />
+            Preview CV
+            {pdfPreview.busy && (
+              <span className="size-2 shrink-0 rounded-full bg-white/90 motion-safe:animate-pulse" aria-hidden />
+            )}
+          </Button>,
+          document.body,
+        )}
+
+      {typeof document !== "undefined" &&
+        createPortal(
+          <PreviewModal
+            open={previewOpen}
+            onDismiss={() => setPreviewOpen(false)}
+            blobUrl={pdfPreview.blobUrl}
+            busy={pdfPreview.busy}
+            err={pdfPreview.err}
+          />,
+          document.body,
+        )}
       {typeof document !== "undefined" &&
         createPortal(
           <DeleteVersionModal
@@ -405,12 +453,7 @@ function SaveFeedbackModal({
 }) {
   return (
     <ModalFadeShell open={open}>
-      <button
-        type="button"
-        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
-        onClick={onDismiss}
-        aria-label="Close"
-      />
+      <ModalScrim onDismiss={onDismiss} />
       <div
         role="dialog"
         aria-modal="true"
@@ -423,7 +466,7 @@ function SaveFeedbackModal({
         <div className="flex flex-col gap-5">
           <div className="flex gap-4">
             <div
-              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500/15 to-emerald-600/10 text-emerald-600 dark:from-emerald-500/25 dark:to-emerald-950/40 dark:text-emerald-400"
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500/22 to-emerald-600/12 text-emerald-600 dark:from-emerald-500/25 dark:to-emerald-950/40 dark:text-emerald-400"
               aria-hidden
             >
               <CheckCircle2 className="size-6" strokeWidth={2} />
@@ -440,17 +483,8 @@ function SaveFeedbackModal({
               </p>
             </div>
           </div>
-          <div className="flex justify-end border-t border-zinc-100 pt-4 dark:border-zinc-800/90">
-            <button
-              type="button"
-              onClick={onDismiss}
-              className={cn(
-                motionInteractive,
-                "rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500",
-              )}
-            >
-              OK
-            </button>
+          <div className="flex justify-end border-t border-zinc-200/70 pt-4 dark:border-zinc-800/90">
+            <Button onClick={onDismiss}>OK</Button>
           </div>
         </div>
       </div>
@@ -469,12 +503,7 @@ function LoadDemoModal({
 }) {
   return (
     <ModalFadeShell open={open}>
-      <button
-        type="button"
-        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
-        onClick={onDismiss}
-        aria-label="Close"
-      />
+      <ModalScrim onDismiss={onDismiss} />
       <div
         role="dialog"
         aria-modal="true"
@@ -487,7 +516,7 @@ function LoadDemoModal({
         <div className="flex flex-col gap-6">
           <div className="flex gap-4">
             <div
-              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/15 to-violet-600/10 text-violet-600 dark:from-violet-500/25 dark:to-violet-950/40 dark:text-violet-400"
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/22 to-violet-600/12 text-violet-600 dark:from-violet-500/25 dark:to-violet-950/40 dark:text-violet-400"
               aria-hidden
             >
               <BookOpen className="size-6" strokeWidth={2} />
@@ -505,27 +534,13 @@ function LoadDemoModal({
               </p>
             </div>
           </div>
-          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
-            <button
-              type="button"
-              onClick={onDismiss}
-              className={cn(
-                motionInteractive,
-                "w-full rounded-xl border border-zinc-200/90 bg-zinc-50/90 px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100/90 sm:w-auto dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/90",
-              )}
-            >
+          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-200/70 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
+            <Button variant="secondary" size="lg" fullWidth onClick={onDismiss}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              className={cn(
-                motionInteractive,
-                "w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_-3px_rgb(124_58_237_/0.45)] hover:bg-violet-500 sm:w-auto dark:bg-violet-600 dark:hover:bg-violet-500",
-              )}
-            >
+            </Button>
+            <Button size="lg" fullWidth onClick={onConfirm}>
               Load demo
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -546,12 +561,7 @@ function DeleteVersionModal({
 }) {
   return (
     <ModalFadeShell open={open}>
-      <button
-        type="button"
-        className="absolute inset-0 bg-zinc-950/65 backdrop-blur-md dark:bg-black/75"
-        onClick={onDismiss}
-        aria-label="Close"
-      />
+      <ModalScrim onDismiss={onDismiss} />
       <div
         role="dialog"
         aria-modal="true"
@@ -564,7 +574,7 @@ function DeleteVersionModal({
         <div className="flex flex-col gap-6">
           <div className="flex gap-4">
             <div
-              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-red-500/15 to-red-600/10 text-red-600 dark:from-red-500/25 dark:to-red-950/40 dark:text-red-400"
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-red-500/22 to-red-600/12 text-red-600 dark:from-red-500/25 dark:to-red-950/40 dark:text-red-400"
               aria-hidden
             >
               <AlertTriangle className="size-6" strokeWidth={2} />
@@ -584,27 +594,13 @@ function DeleteVersionModal({
               </p>
             </div>
           </div>
-          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
-            <button
-              type="button"
-              onClick={onDismiss}
-              className={cn(
-                motionInteractive,
-                "w-full rounded-xl border border-zinc-200/90 bg-zinc-50/90 px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100/90 sm:w-auto dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-700/90",
-              )}
-            >
+          <div className="flex flex-col-reverse gap-2.5 border-t border-zinc-200/70 pt-5 sm:flex-row sm:justify-end dark:border-zinc-800/90">
+            <Button variant="secondary" size="lg" fullWidth onClick={onDismiss}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              className={cn(
-                motionInteractive,
-                "w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_-3px_rgb(220_38_38_/0.45)] hover:bg-red-500 sm:w-auto dark:bg-red-600 dark:hover:bg-red-500",
-              )}
-            >
+            </Button>
+            <Button variant="destructive" size="lg" fullWidth onClick={onConfirm}>
               Delete version
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -654,7 +650,7 @@ function Toolbar({
   const { register } = useFormContext<CVData>();
 
   return (
-    <div className="relative z-30 mb-6 flex flex-col rounded-3xl border border-zinc-200/70 bg-white/80 p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.6)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
+    <div className="relative z-30 mb-6 flex flex-col rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-[0_2px_32px_-8px_rgb(0_0_0_/0.08),0_0_0_1px_rgb(255_255_255_/0.8)_inset] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:shadow-[0_2px_40px_-10px_rgb(0_0_0_/0.55),inset_0_1px_0_rgb(255_255_255_/0.04)] sm:p-6">
       <div
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-x-6"
         role="group"
@@ -662,15 +658,15 @@ function Toolbar({
       >
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <h1 className="m-0 flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <CVBuilderMark />
-            <CVBuilderWordmark />
+            <LogoMark />
+            <LogoWordmark />
           </h1>
           <p className="m-0 min-w-0 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             {tagline}
           </p>
         </div>
         <div
-          className="flex shrink-0 self-start rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/40"
+          className="flex shrink-0 self-start rounded-2xl border border-zinc-300/60 bg-zinc-100/80 p-2 shadow-[inset_0_1px_0_rgb(255_255_255_/0.9)] dark:border-zinc-700/80 dark:bg-zinc-800/40 dark:shadow-none"
           role="group"
           aria-label="Theme"
         >
@@ -681,7 +677,7 @@ function Toolbar({
       <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/70">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div
-            className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/70 bg-zinc-50/90 p-2 dark:border-zinc-700/80 dark:bg-zinc-800/50"
+            className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-zinc-300/60 bg-zinc-100/80 p-2 shadow-[inset_0_1px_0_rgb(255_255_255_/0.9)] dark:border-zinc-700/80 dark:bg-zinc-800/50 dark:shadow-none"
             role="group"
             aria-label="CV version"
           >
@@ -722,58 +718,22 @@ function Toolbar({
                 )}
               />
             </label>
-            <button
-              type="button"
-              onClick={onNewVersion}
-              className={cn(
-                motionInteractive,
-                "inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3.5 py-2.5 text-sm font-medium text-emerald-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-emerald-100/90 dark:border-emerald-900/45 dark:bg-emerald-950/35 dark:text-emerald-100 dark:hover:bg-emerald-950/55",
-              )}
-              title="Create a new blank CV version"
-              aria-label="Create a new blank CV version"
-            >
+            <Button variant="soft-emerald" size="sm" onClick={onNewVersion} title="Create a new blank CV version" aria-label="Create a new blank CV version">
               <Plus className="size-4 shrink-0" aria-hidden />
               New
-            </button>
-            <button
-              type="button"
-              onClick={onDuplicate}
-              className={cn(
-                motionInteractive,
-                "inline-flex items-center gap-2 rounded-xl border border-violet-200/80 bg-violet-50/95 px-3.5 py-2.5 text-sm font-medium text-violet-900 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
-              )}
-              title="Duplicate the current version"
-              aria-label="Duplicate the current version"
-            >
+            </Button>
+            <Button variant="soft-violet" size="sm" onClick={onDuplicate} title="Duplicate the current version" aria-label="Duplicate the current version">
               <Copy className="size-4 shrink-0" aria-hidden />
               Duplicate
-            </button>
-            <button
-              type="button"
-              onClick={onDeleteRequest}
-              className={cn(
-                motionInteractive,
-                "inline-flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/95 px-3.5 py-2.5 text-sm font-medium text-red-800 shadow-[0_1px_2px_rgb(0_0_0_/0.04)] hover:bg-red-100/85 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200 dark:hover:bg-red-950/50",
-              )}
-              title="Delete this version"
-              aria-label="Delete this CV version. Opens a confirmation dialog."
-            >
+            </Button>
+            <Button variant="soft-red" size="sm" onClick={onDeleteRequest} title="Delete this version" aria-label="Delete this CV version. Opens a confirmation dialog.">
               <Trash2 className="size-4 shrink-0" aria-hidden />
               Delete
-            </button>
-            <button
-              type="button"
-              onClick={onSave}
-              className={cn(
-                motionInteractive,
-                "inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 motion-safe:active:scale-[0.99] dark:bg-violet-600 dark:hover:bg-violet-500",
-              )}
-              title="Save to this browser now (local storage)"
-              aria-label="Save CV and skill library to local storage now"
-            >
+            </Button>
+            <Button onClick={onSave} title="Save to this browser now (local storage)" aria-label="Save CV and skill library to local storage now">
               <Save className="size-4 shrink-0" aria-hidden />
               Save
-            </button>
+            </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <ExportButton

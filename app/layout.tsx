@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import Script from "next/script";
@@ -28,10 +28,6 @@ export const metadata: Metadata = {
   description: "Create, preview, and export a professional CV as PDF.",
   applicationName: "CV Builder",
   manifest: "/site.webmanifest",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
-  ],
   appleWebApp: {
     capable: true,
     title: "CV Builder",
@@ -50,6 +46,13 @@ export const metadata: Metadata = {
     title: "CV Builder",
     description: "Create, preview, and export a professional CV as PDF.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({

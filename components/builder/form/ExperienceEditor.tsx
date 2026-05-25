@@ -2,10 +2,10 @@
 
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
+import { Button } from "@/components/ui/Button";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
 import { EXPERIENCE_MONTH_OPTIONS } from "@/lib/experience-dates";
 import {
-  formDeleteButtonClass,
   formFieldSoftClass,
   formFieldsStackClass,
   formLabelClass,
@@ -15,13 +15,7 @@ import {
   formNestedGroupTitleClass,
   formSelectSoftClass,
 } from "@/lib/form-styles";
-import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
-
-const addExperienceButtonClass = cn(
-  motionInteractive,
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500",
-);
 
 const emptyExp = (): ExperienceItem => ({
   role: "",
@@ -46,14 +40,10 @@ export function ExperienceEditor() {
   if (fields.length === 0) {
     return (
       <div className="space-y-4">
-        <button
-          type="button"
-          onClick={() => append(emptyExp())}
-          className={addExperienceButtonClass}
-        >
+        <Button variant="primary" onClick={() => append(emptyExp())}>
           <Plus className="size-4 shrink-0 opacity-90" aria-hidden />
           Add experience
-        </button>
+        </Button>
       </div>
     );
   }
@@ -65,32 +55,32 @@ export function ExperienceEditor() {
           <div className={formNestedGroupHeaderClass}>
             <span className={formNestedGroupTitleClass}>Role {index + 1}</span>
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="rounded-lg p-2 text-zinc-500 hover:bg-white/70 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-100"
+              <Button
+                variant="icon"
+                size="icon"
                 disabled={index === 0}
                 onClick={() => move(index, index - 1)}
                 aria-label="Move experience up"
               >
                 <ChevronUp className="size-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                className="rounded-lg p-2 text-zinc-500 hover:bg-white/70 hover:text-zinc-800 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-100"
+              </Button>
+              <Button
+                variant="icon"
+                size="icon"
                 disabled={index === fields.length - 1}
                 onClick={() => move(index, index + 1)}
                 aria-label="Move experience down"
               >
                 <ChevronDown className="size-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                className={formDeleteButtonClass}
+              </Button>
+              <Button
+                variant="icon-danger"
+                size="icon"
                 onClick={() => remove(index)}
                 aria-label="Remove experience"
               >
                 <Trash2 className="size-4" aria-hidden />
-              </button>
+              </Button>
             </div>
           </div>
           <div className={formFieldsStackClass}>
@@ -235,26 +225,21 @@ export function ExperienceEditor() {
           </div>
         </div>
       ))}
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="lg"
+        fullWidth
+        className="text-base"
         onClick={() => append(emptyExp())}
-        className={cn(
-          addExperienceButtonClass,
-          "w-full rounded-xl py-3 text-base",
-        )}
       >
         <Plus className="size-4" aria-hidden />
         Add experience
-      </button>
+      </Button>
     </div>
   );
 }
 
 function BulletsEditor({ index }: { index: number }) {
-  const addBulletClass = cn(
-    motionTextButton,
-    "text-[0.9375rem] font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300",
-  );
   const { control, register } = useFormContext<CVData>();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -271,23 +256,19 @@ function BulletsEditor({ index }: { index: number }) {
               className={cn(formFieldSoftClass, "min-w-0 flex-1")}
               {...register(`body.experience.${index}.bullets.${bi}`)}
             />
-            <button
-              type="button"
-              className={formDeleteButtonClass}
+            <Button
+              variant="icon-danger"
+              size="icon"
               onClick={() => remove(bi)}
               aria-label="Remove bullet"
             >
               <Trash2 className="size-4" aria-hidden />
-            </button>
+            </Button>
           </div>
         ))}
-        <button
-          type="button"
-          className={addBulletClass}
-          onClick={() => append("" as never)}
-        >
+        <Button variant="text" onClick={() => append("" as never)}>
           + Add bullet
-        </button>
+        </Button>
       </div>
     </fieldset>
   );

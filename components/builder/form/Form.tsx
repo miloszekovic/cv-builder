@@ -25,7 +25,10 @@ import type { CVData, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
 import type { CvAccentId } from "@/lib/cv-accents";
 import { CV_ACCENTS, CV_ACCENT_IDS } from "@/lib/cv-accents";
 import { cvTemplateUsesSingleColumn } from "@/lib/cv-templates";
-import { TemplatePicker } from "@/components/TemplatePicker";
+import { TemplatePicker } from "@/components/builder/form/TemplatePicker";
+import { Button } from "@/components/ui/Button";
+import { RadioSwatch } from "@/components/ui/RadioSwatch";
+import { Reveal } from "@/components/ui/Reveal";
 import { effectivePhotoMode } from "@/lib/cv-photo";
 import {
   formFieldSectionClass,
@@ -37,21 +40,13 @@ import {
   editorSectionClass,
   editorSectionTitleClass,
   formNestedGroupClass,
-  formDeleteButtonClass,
 } from "@/lib/form-styles";
-import { motionInteractive, motionTextButton } from "@/lib/motion-styles";
 import { cn } from "@/lib/cn";
-import { ExperienceEditor } from "@/components/ExperienceEditor";
-import { Reveal } from "@/components/Reveal";
-import { SkillsManager } from "@/components/SkillsManager";
+import { ExperienceEditor } from "@/components/builder/form/ExperienceEditor";
+import { SkillsManager } from "@/components/builder/form/SkillsManager";
 import type { GenerateCvInput } from "@/lib/openai";
 
-const addFieldTriggerClass = cn(
-  motionTextButton,
-  "text-[0.9375rem] font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300",
-);
-
-export function CVFormModeTabs({
+export function FormModeTabs({
   mode,
   setMode,
   className,
@@ -94,7 +89,7 @@ export function CVFormModeTabs({
   );
 }
 
-export function CVForm({
+export function Form({
   mode,
   skillLibrary,
   onSkillLibraryChange,
@@ -121,7 +116,7 @@ export function CVForm({
         role="tabpanel"
         aria-labelledby="tab-editor-manual"
         hidden={mode !== "manual"}
-        className="space-y-10"
+        className="space-y-8"
       >
         <Section title="Design" description="Template, sidebar placement, and accent color for the PDF.">
           <div className="space-y-7">
@@ -130,18 +125,15 @@ export function CVForm({
               <TemplatePicker currentId={templateId} register={register} />
             </div>
             {!singleColumnTemplate ? (
-              <div className="flex flex-col gap-3 border-t border-zinc-100 pt-6 sm:flex-row sm:items-center sm:gap-5 dark:border-zinc-800/80">
+              <div className="flex flex-col gap-3 border-t border-zinc-200/70 pt-6 sm:flex-row sm:items-center sm:gap-5 dark:border-zinc-800/80">
                 <span className={cn(formLabelClass, "shrink-0 sm:min-w-30")}>Sidebar</span>
-                <button
-                  type="button"
+                <Button
+                  variant="soft-violet"
+                  className="w-fit max-w-full font-semibold"
                   onClick={() => {
                     const next = sidebarPosition === "right" ? "left" : "right";
                     setValue("meta.sidebarPosition", next, { shouldDirty: true });
                   }}
-                  className={cn(
-                    motionInteractive,
-                    "inline-flex w-fit max-w-full items-center gap-2 rounded-xl border border-violet-200/70 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 hover:bg-violet-100/90 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/55",
-                  )}
                   title="Place the sidebar on the left or right of the main column"
                   aria-label={
                     sidebarPosition === "right"
@@ -155,14 +147,14 @@ export function CVForm({
                     <PanelLeft className="size-4 shrink-0" aria-hidden />
                   )}
                   Sidebar on the {sidebarPosition}
-                </button>
+                </Button>
               </div>
             ) : (
-              <p className="border-t border-zinc-100 pt-6 text-sm text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
+              <p className="border-t border-zinc-200/70 pt-6 text-sm text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
                 Mono stacks everything in one column — sidebar placement does not apply.
               </p>
             )}
-            <div className="border-t border-zinc-100 pt-6 dark:border-zinc-800/80">
+            <div className="border-t border-zinc-200/70 pt-6 dark:border-zinc-800/80">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                 <span className={cn(formLabelClass, "shrink-0 sm:min-w-30")}>Accent</span>
                 <fieldset className="m-0 min-w-0 flex-1 border-0 p-0">
@@ -185,7 +177,7 @@ export function CVForm({
               <input className={formFieldSectionClass} {...register("body.mainRole")} />
             </label>
           </div>
-          <div className="mt-6 border-t border-zinc-100 pt-6 dark:border-zinc-800/80">
+          <div className="mt-6 border-t border-zinc-200/70 pt-6 dark:border-zinc-800/80">
             <p className={cn(formLabelClass, "mb-3.5")}>Photo & initials</p>
             <PhotoField />
           </div>
@@ -332,29 +324,14 @@ function ModeTab({
   const on = current === id;
   const inWorkspace = variant === "workspace";
   return (
-    <button
+    <Button
       id={tabId}
-      type="button"
+      variant="tab"
+      selected={on}
+      tabContext={inWorkspace ? "workspace" : "standalone"}
       role="tab"
       aria-selected={on}
       aria-controls={panelId}
-      className={cn(
-        motionInteractive,
-        "flex w-full min-h-11 flex-col items-center justify-center gap-px rounded-xl border-0 px-2 py-2 text-center shadow-none sm:min-h-13 sm:px-4 sm:py-2.5",
-        "outline-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-violet-500/55 focus-visible:ring-offset-0",
-        on
-          ? "bg-violet-600 text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.4)] hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
-          : inWorkspace
-            ? cn(
-                "bg-white/90 text-zinc-900 ring-1 ring-zinc-200/80",
-                "hover:bg-white dark:bg-zinc-800/70 dark:text-zinc-50 dark:ring-zinc-600/70 dark:hover:bg-zinc-800",
-              )
-            : cn(
-                "bg-zinc-100/90 text-zinc-900",
-                "hover:bg-zinc-200/75",
-                "dark:bg-zinc-800/50 dark:text-zinc-50 dark:hover:bg-zinc-700/65",
-              ),
-      )}
       onClick={() => setMode(id)}
     >
       <span className="inline-flex items-center gap-1.5 text-sm font-semibold tracking-tight sm:text-[0.9375rem]">
@@ -371,7 +348,7 @@ function ModeTab({
           {description}
         </span>
       ) : null}
-    </button>
+    </Button>
   );
 }
 
@@ -394,29 +371,15 @@ function AccentSwatches({
       {CV_ACCENT_IDS.map((id) => {
         const selected = currentId === id;
         return (
-          <label
+          <RadioSwatch
             key={id}
-            className={cn(
-              motionInteractive,
-              "relative flex cursor-pointer items-center justify-center rounded-full outline-hidden focus-within:ring-2 focus-within:ring-violet-500/70 focus-within:ring-offset-2 focus-within:ring-offset-white dark:focus-within:ring-violet-400 dark:focus-within:ring-offset-zinc-950",
-              "p-0.5",
-              selected
-                ? "ring-2 ring-zinc-900 ring-offset-2 ring-offset-white dark:ring-zinc-100 dark:ring-offset-zinc-950"
-                : "ring-1 ring-zinc-300/90 hover:ring-zinc-400 dark:ring-zinc-600",
-            )}
+            selected={selected}
+            dotSize={lg ? "md" : "sm"}
+            color={CV_ACCENTS[id].accent}
             title={CV_ACCENTS[id].label}
-            aria-label={CV_ACCENTS[id].label}
-          >
-            <input type="radio" value={id} className="sr-only" {...register("meta.accent")} />
-            <span
-              aria-hidden
-              className={cn(
-                "rounded-full border border-zinc-900/10 shadow-inner dark:border-white/15",
-                lg ? "size-7" : "size-6",
-              )}
-              style={{ backgroundColor: CV_ACCENTS[id].accent }}
-            />
-          </label>
+            value={id}
+            {...register("meta.accent")}
+          />
         );
       })}
     </div>
@@ -464,7 +427,7 @@ function PhotoField() {
   };
 
   const radioRow =
-    "motion-safe:transition-colors motion-safe:duration-200 flex cursor-pointer items-center gap-3 rounded-xl border border-transparent px-3.5 py-2.5 text-[0.9375rem] text-zinc-800 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800/70";
+    "motion-safe:transition-colors motion-safe:duration-200 flex cursor-pointer items-center gap-3 rounded-xl border border-transparent px-3.5 py-2.5 text-[0.9375rem] text-zinc-800 hover:bg-zinc-100/80 has-[:checked]:border-violet-300/80 has-[:checked]:bg-violet-50 dark:text-zinc-200 dark:hover:bg-zinc-800/70 dark:has-[:checked]:border-violet-800/50 dark:has-[:checked]:bg-violet-950/30";
 
   return (
     <fieldset className="space-y-4">
@@ -509,7 +472,7 @@ function PhotoField() {
               id="cv-photo-upload"
               type="file"
               accept="image/*"
-              className="min-w-0 flex-1 max-w-full py-2 text-[0.9375rem] leading-normal text-zinc-600 file:mr-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-zinc-900 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-white file:transition-[filter,background-color] file:duration-200 file:hover:brightness-110 dark:text-zinc-400 dark:file:bg-violet-600 dark:file:hover:brightness-110"
+              className="min-w-0 flex-1 max-w-full py-2 text-[0.9375rem] leading-normal text-zinc-600 file:mr-4 file:cursor-pointer file:rounded-md file:border file:border-blue-700 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white file:shadow-sm file:transition-[background-color,border-color] file:duration-200 file:hover:border-blue-800 file:hover:bg-blue-700 dark:text-zinc-400 dark:file:border-blue-500 dark:file:bg-blue-600 dark:file:hover:border-blue-400 dark:file:hover:bg-blue-500"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (!f) return;
@@ -549,7 +512,7 @@ function AiPanel({
     useState<NonNullable<GenerateCvInput["maxCvLength"]>>("medium");
 
   return (
-    <section className="space-y-5 rounded-3xl border border-violet-200/70 bg-linear-to-b from-violet-50/95 via-white to-white p-7 shadow-[0_2px_24px_-12px_rgb(124_58_237_/0.12)] ring-1 ring-violet-950/6 dark:border-violet-900/40 dark:from-violet-950/35 dark:via-zinc-900/80 dark:to-zinc-900 dark:ring-white/6 sm:p-8">
+    <section className="space-y-5 rounded-3xl border border-violet-300/60 bg-linear-to-b from-violet-50/95 via-white to-white p-7 shadow-[0_2px_24px_-12px_rgb(124_58_237_/0.14)] ring-1 ring-violet-200/50 dark:border-violet-900/40 dark:from-violet-950/35 dark:via-zinc-900/80 dark:to-zinc-900 dark:ring-white/6 sm:p-8">
       <div className="flex items-center gap-2.5 text-violet-900 dark:text-violet-100">
         <Sparkles className="size-5 shrink-0" aria-hidden />
         <h2 className="text-xl font-semibold tracking-tight">AI-assisted draft</h2>
@@ -603,8 +566,9 @@ function AiPanel({
         </label>
       </div>
       </div>
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="lg"
         disabled={aiBusy}
         onClick={() =>
           onGenerate({
@@ -614,10 +578,6 @@ function AiPanel({
             maxCvLength,
           })
         }
-        className={cn(
-          motionInteractive,
-          "inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-[0.9375rem] font-semibold text-white shadow-[0_2px_12px_-2px_rgb(124_58_237_/0.45)] hover:bg-violet-500 disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500",
-        )}
         aria-busy={aiBusy}
       >
         {aiBusy ? (
@@ -631,7 +591,7 @@ function AiPanel({
             Generate CV
           </>
         )}
-      </button>
+      </Button>
       <div className="min-h-5" aria-live="polite" aria-relevant="additions text">
         {aiError && (
           <p className="text-base text-red-600 dark:text-red-400" role="alert">
@@ -648,13 +608,9 @@ function EducationList() {
   const { fields, append, remove } = useFieldArray({ control, name: "sidebar.education" });
   if (fields.length === 0) {
     return (
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ university: "", title: "" })}
-      >
+      <Button variant="text" onClick={() => append({ university: "", title: "" })}>
         + Add education
-      </button>
+      </Button>
     );
   }
   return (
@@ -672,24 +628,20 @@ function EducationList() {
               placeholder="Title / degree"
               {...register(`sidebar.education.${i}.title`)}
             />
-            <button
-              type="button"
-              className={formDeleteButtonClass}
+            <Button
+              variant="icon-danger"
+              size="icon"
               onClick={() => remove(i)}
               aria-label={`Remove education entry ${i + 1}`}
             >
               <Trash2 className="size-4" aria-hidden />
-            </button>
+            </Button>
           </div>
         </div>
       ))}
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ university: "", title: "" })}
-      >
+      <Button variant="text" onClick={() => append({ university: "", title: "" })}>
         + Add education
-      </button>
+      </Button>
     </div>
   );
 }
@@ -702,13 +654,9 @@ function CertificatesList() {
   });
   if (fields.length === 0) {
     return (
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ year: undefined, name: "" })}
-      >
+      <Button variant="text" onClick={() => append({ year: undefined, name: "" })}>
         + Add certificate
-      </button>
+      </Button>
     );
   }
   return (
@@ -730,23 +678,19 @@ function CertificatesList() {
             placeholder="Certificate name"
             {...register(`sidebar.certificates.${i}.name`)}
           />
-          <button
-            type="button"
-            className={formDeleteButtonClass}
+          <Button
+            variant="icon-danger"
+            size="icon"
             onClick={() => remove(i)}
             aria-label={`Remove certificate row ${i + 1}`}
           >
             <Trash2 className="size-4" aria-hidden />
-          </button>
+          </Button>
         </div>
       ))}
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ year: undefined, name: "" })}
-      >
+      <Button variant="text" onClick={() => append({ year: undefined, name: "" })}>
         + Add certificate
-      </button>
+      </Button>
     </div>
   );
 }
@@ -756,13 +700,9 @@ function LanguagesList() {
   const { fields, append, remove } = useFieldArray({ control, name: "sidebar.languages" });
   if (fields.length === 0) {
     return (
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ name: "", level: "" })}
-      >
+      <Button variant="text" onClick={() => append({ name: "", level: "" })}>
         + Add language
-      </button>
+      </Button>
     );
   }
   return (
@@ -788,24 +728,20 @@ function LanguagesList() {
               />
             </label>
             </div>
-            <button
-              type="button"
-              className={formDeleteButtonClass}
+            <Button
+              variant="icon-danger"
+              size="icon"
               onClick={() => remove(i)}
               aria-label={`Remove language entry ${i + 1}`}
             >
               <Trash2 className="size-4" aria-hidden />
-            </button>
+            </Button>
           </div>
         </div>
       ))}
-      <button
-        type="button"
-        className={addFieldTriggerClass}
-        onClick={() => append({ name: "", level: "" })}
-      >
+      <Button variant="text" onClick={() => append({ name: "", level: "" })}>
         + Add language
-      </button>
+      </Button>
     </div>
   );
 }
