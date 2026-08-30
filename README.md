@@ -15,18 +15,19 @@ A web app for building CVs: a validated form, live preview, themes, browser stor
 ## Requirements
 
 - Node.js 20+
-- For PDF: Playwright Chromium installed locally (`npx playwright install chromium` after `npm install`). On Vercel, PDF uses `@sparticuz/chromium` automatically — no extra install step.
+- pnpm 9+ (recommended: enable via Corepack — `corepack enable`)
+- For PDF: Playwright Chromium installed locally (`pnpm run playwright:install` after `pnpm install`). Browsers must live under `node_modules` because scripts set `PLAYWRIGHT_BROWSERS_PATH=0`. On Vercel, PDF uses `@sparticuz/chromium` automatically — no extra install step.
 
 ## Getting started
 
 ```bash
-npm install
-npx playwright install chromium   # only if you use PDF export
-npm run build:print-css           # before first build / PDF (also runs in npm run build)
-npm run dev
+pnpm install
+pnpm run playwright:install             # only if you use PDF export / preview
+pnpm run build:print-css                # before first build / PDF (also runs in pnpm run build)
+pnpm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3010](http://localhost:3010).
 
 ## Environment variables
 
@@ -38,17 +39,18 @@ Copy `.env.example` to `.env.local` and set values there (secrets stay untracked
 | `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini`. |
 | `PDF_EXPORT_ENABLED` | No | Set to `false` to disable `POST /api/export-pdf` (403). |
 
-## npm scripts
+## Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Next.js dev server. |
-| `npm run build` | Build print CSS, then production Next build. |
-| `npm run start` | Production server (after `build`). |
-| `npm run build:print-css` | Tailwind → `public/cv-print.css`. |
-| `npm run demo:pdf` | Writes a demo PDF under `output/pdf/` (local only; `output/` is gitignored). |
-| `npm run lint` | ESLint. |
-| `npm run typecheck` | TypeScript check without emit. |
+| `pnpm run dev` | Next.js dev server (port 3010). |
+| `pnpm run build` | Build print CSS, then production Next build. |
+| `pnpm run start` | Production server (after `build`). |
+| `pnpm run build:print-css` | Tailwind → `public/cv-print.css`. |
+| `pnpm run demo:pdf` | Writes a demo PDF under `output/pdf/` (local only; `output/` is gitignored). |
+| `pnpm run playwright:install` | Download Chromium into local `node_modules` (needed after fresh install). |
+| `pnpm run lint` | ESLint. |
+| `pnpm run typecheck` | TypeScript check without emit. |
 
 ## Stack
 

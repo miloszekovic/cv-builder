@@ -21,7 +21,7 @@
 /build
 /dist
 
-# generated CV / PDF demo output (see npm run demo:pdf)
+# generated CV / PDF demo output (see pnpm run demo:pdf)
 /output/
 
 # playwright (reports if you add e2e tests later)

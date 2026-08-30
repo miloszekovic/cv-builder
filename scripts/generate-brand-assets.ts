@@ -1,6 +1,6 @@
 /**
  * Generates favicon, PWA, Apple, and OG assets from brand/logo.svg.
- * Run: npm run generate:brand
+ * Run: pnpm run generate:brand
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
