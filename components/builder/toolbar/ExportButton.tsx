@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { CVData } from "@/lib/cv-schema";
 import { fetchCvPdfBlob } from "@/lib/fetch-cv-pdf-client";
+import { cvPdfDownloadFileName } from "@/lib/cv-pdf-filename";
 import { cn } from "@/lib/cn";
 
 export function ExportButton({
@@ -42,7 +43,7 @@ export function ExportButton({
       const url = cachedUrl ?? URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${(cv.meta.versionName || "cv").replace(/\s+/g, "-") || "cv"}.pdf`;
+      a.download = cvPdfDownloadFileName(cv);
       a.click();
       if (!cachedUrl) URL.revokeObjectURL(url);
     } catch (e) {

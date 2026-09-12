@@ -4,7 +4,11 @@ import type {
   SkillCategoryId,
   SkillLibrary,
 } from "./cv-schema";
-import { SKILL_CATEGORY_LABELS } from "./cv-schema";
+import {
+  SKILL_CATEGORY_LABELS,
+  SKILL_CATEGORY_ORDER,
+  normalizeSkillSelections,
+} from "./cv-schema";
 import { normalizeCvTemplate } from "./cv-templates";
 
 /** Ensures layout meta defaults when binding form controls. */
@@ -98,12 +102,11 @@ export const defaultSkillLibraryTags: Record<SkillCategoryId, string[]> = {
     "Headless CMS",
     "Astro Content Collections",
   ],
-  os: ["macOS", "Windows", "Linux", "WSL 2"],
 };
 
 export function createDefaultSkillLibrary(): SkillLibrary {
   const lib = {} as SkillLibrary;
-  (Object.keys(defaultSkillLibraryTags) as SkillCategoryId[]).forEach((id) => {
+  SKILL_CATEGORY_ORDER.forEach((id) => {
     lib[id] = {
       label: SKILL_CATEGORY_LABELS[id],
       tags: [...defaultSkillLibraryTags[id]],
@@ -114,7 +117,7 @@ export function createDefaultSkillLibrary(): SkillLibrary {
 
 /** All tags visible per category by default. */
 export function defaultSkillSelectionsFromLibrary(lib: SkillLibrary) {
-  return (Object.keys(lib) as SkillCategoryId[]).map((categoryId) => ({
+  return SKILL_CATEGORY_ORDER.map((categoryId) => ({
     categoryId,
     visibleTags: [...lib[categoryId].tags],
   }));
@@ -122,12 +125,10 @@ export function defaultSkillSelectionsFromLibrary(lib: SkillLibrary) {
 
 /** One row per skill category with nothing selected (for new / blank CVs). */
 export function emptySkillSelections(): NonNullable<CVData["sidebar"]["skills"]> {
-  return (Object.keys(defaultSkillLibraryTags) as SkillCategoryId[]).map(
-    (categoryId) => ({
-      categoryId,
-      visibleTags: [],
-    }),
-  );
+  return SKILL_CATEGORY_ORDER.map((categoryId) => ({
+    categoryId,
+    visibleTags: [],
+  }));
 }
 
 export const blankCvData = (): CVData => {
@@ -200,7 +201,7 @@ export function normalizeCvForForm(cv: CVData): CVData {
       ...cv.sidebar,
       details: { ...b.sidebar.details, ...cv.sidebar?.details },
       education: cv.sidebar?.education ?? b.sidebar.education,
-      skills: cv.sidebar?.skills ?? b.sidebar.skills,
+      skills: normalizeSkillSelections(cv.sidebar?.skills ?? b.sidebar.skills),
       certificates: cv.sidebar?.certificates ?? b.sidebar.certificates,
       languages: cv.sidebar?.languages ?? b.sidebar.languages,
       hobbies: cv.sidebar?.hobbies ?? b.sidebar.hobbies,

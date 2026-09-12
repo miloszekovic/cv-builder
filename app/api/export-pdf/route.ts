@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cvDataSchema } from "@/lib/cv-schema";
+import { cvPdfDownloadFileName } from "@/lib/cv-pdf-filename";
 import { renderCvToPdfBuffer } from "@/lib/render-cv-pdf";
 
 export const runtime = "nodejs";
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${(cv.meta.versionName || "cv").replace(/[^\w\-]+/g, "-")}.pdf"`,
+        "Content-Disposition": `attachment; filename="${cvPdfDownloadFileName(cv)}"`,
       },
     });
   } catch (e) {

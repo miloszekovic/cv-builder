@@ -32,6 +32,7 @@ import {
   normalizeCvForForm,
   withDefaultMetaAccent,
 } from "@/lib/default-cv-data";
+import { cvJsonDownloadFileName } from "@/lib/cv-pdf-filename";
 import { localCvStorage } from "@/lib/storage";
 import type { GenerateCvInput } from "@/lib/openai";
 import { cn } from "@/lib/cn";
@@ -267,7 +268,7 @@ export function Builder() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = "cv-export.json";
+              a.download = cvJsonDownloadFileName(form.getValues());
               a.click();
               URL.revokeObjectURL(url);
             }}

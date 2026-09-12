@@ -50,7 +50,7 @@ function buildUserPrompt(input: GenerateCvInput) {
     "{ meta: { versionName?, targetRole?, sidebarPosition: 'left'|'right', accent?: 'teal'|'ocean'|'lavender'|'rose'|'sage'|'clay'|'indigo' },",
     "  body: { image?, photoMode?: 'image'|'initials'|'none', name?, mainRole?, profile?, experience?: Array<{ role?, company?, country?, startMonth?: 1-12, startYear?, endMonth?: 1-12, endYear?: number|'present', intro?, bullets?: string[], outro? }> },",
     "  sidebar: { details?: { location?, email?, phone?, website?, linkedIn?, gitHub? }, education?: Array<{ university?, title? }>,",
-    "    skills?: Array<{ categoryId: 'frontEnd'|'uiUx'|'tools'|'aiAutomation'|'principles'|'cms'|'os', visibleTags: string[] }>,",
+    "    skills?: Array<{ categoryId: 'frontEnd'|'uiUx'|'tools'|'aiAutomation'|'principles'|'cms', visibleTags: string[] }>,",
     "    certificates?: Array<{ year?, name? }>, languages?: Array<{ name?, level? }>, hobbiesText?: string } }",
   ].join("\n");
 }

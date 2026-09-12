@@ -13,12 +13,15 @@ import {
   Phone,
   Sparkles,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import {
+  Controller,
   useFieldArray,
   useFormContext,
   useWatch,
+  type Control,
   type UseFormRegister,
 } from "react-hook-form";
 import type { CVData, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
@@ -28,8 +31,17 @@ import { cvTemplateUsesSingleColumn } from "@/lib/cv-templates";
 import { TemplatePicker } from "@/components/builder/form/TemplatePicker";
 import { Button } from "@/components/ui/Button";
 import { RadioSwatch } from "@/components/ui/RadioSwatch";
+import { AccordionGroup, AccordionItem, AccordionSection } from "@/components/ui/Accordion";
 import { Reveal } from "@/components/ui/Reveal";
 import { effectivePhotoMode } from "@/lib/cv-photo";
+import {
+  composeGitHubValue,
+  composeLinkedInValue,
+  GITHUB_HANDLE_PREFIX,
+  LINKEDIN_HANDLE_PREFIX,
+  parseGitHubHandle,
+  parseLinkedInHandle,
+} from "@/lib/profile-links";
 import {
   formFieldSectionClass,
   formFieldSoftClass,
@@ -44,6 +56,7 @@ import {
 import { cn } from "@/lib/cn";
 import { ExperienceEditor } from "@/components/builder/form/ExperienceEditor";
 import { SkillsManager } from "@/components/builder/form/SkillsManager";
+import { useEditorAccordionPref } from "@/hooks/use-editor-accordion-pref";
 import type { GenerateCvInput } from "@/lib/openai";
 
 export function FormModeTabs({
@@ -104,10 +117,16 @@ export function Form({
   aiBusy: boolean;
   aiError: string | null;
 }) {
-  const { register, watch, setValue } = useFormContext<CVData>();
+  const { control, register, watch, setValue } = useFormContext<CVData>();
   const sidebarPosition = watch("meta.sidebarPosition");
   const templateId = watch("meta.template") ?? "classic";
   const singleColumnTemplate = cvTemplateUsesSingleColumn(templateId);
+  const detailsAccordion = useEditorAccordionPref("sidebar.details", false);
+  const educationAccordion = useEditorAccordionPref("sidebar.education", false);
+  const skillsAccordion = useEditorAccordionPref("sidebar.skills", false);
+  const certificatesAccordion = useEditorAccordionPref("sidebar.certificates", false);
+  const languagesAccordion = useEditorAccordionPref("sidebar.languages", false);
+  const hobbiesAccordion = useEditorAccordionPref("sidebar.hobbies", false);
 
   return (
     <div className="space-y-8">
@@ -200,67 +219,119 @@ export function Form({
           <ExperienceEditor />
         </Section>
 
-        <Section title="Sidebar — details">
-          <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(
-              [
-                { key: "location" as const, lab: "Location", Icon: MapPin },
-                { key: "email" as const, lab: "Email", Icon: Mail },
-                { key: "phone" as const, lab: "Phone", Icon: Phone },
-                { key: "website" as const, lab: "Website", Icon: Globe },
-                { key: "linkedIn" as const, lab: "LinkedIn", Icon: Linkedin },
-                { key: "gitHub" as const, lab: "GitHub", Icon: Github },
-              ] as const
-            ).map(({ key, lab, Icon }) => (
-              <label key={key} className={cn("min-w-0", formLabelControlStack)}>
-                <span
-                  className={cn(
-                    formLabelClass,
-                    "inline-flex items-center gap-1.5",
-                  )}
-                >
-                  <Icon
-                    className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400"
-                    aria-hidden
-                  />
-                  {lab}
-                </span>
-                <input
+        <Section title="Sidebar">
+          <AccordionGroup className="space-y-3">
+            <AccordionItem
+              title="Details"
+              variant="nested"
+              open={detailsAccordion.open}
+              onOpenChange={detailsAccordion.onOpenChange}
+            >
+              <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+                {(
+                  [
+                    { key: "location" as const, lab: "Location", Icon: MapPin },
+                    { key: "email" as const, lab: "Email", Icon: Mail },
+                    { key: "phone" as const, lab: "Phone", Icon: Phone },
+                    { key: "website" as const, lab: "Website", Icon: Globe },
+                  ] as const
+                ).map(({ key, lab, Icon }) => (
+                  <label key={key} className={cn("min-w-0", formLabelControlStack)}>
+                    <span
+                      className={cn(
+                        formLabelClass,
+                        "inline-flex items-center gap-1.5",
+                      )}
+                    >
+                      <Icon
+                        className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400"
+                        aria-hidden
+                      />
+                      {lab}
+                    </span>
+                    <input
+                      className={formFieldSectionClass}
+                      {...register(`sidebar.details.${key}`)}
+                    />
+                  </label>
+                ))}
+                <PrefixedHandleField
+                  name="sidebar.details.linkedIn"
+                  label="LinkedIn"
+                  icon={Linkedin}
+                  prefix={LINKEDIN_HANDLE_PREFIX}
+                  parse={parseLinkedInHandle}
+                  compose={composeLinkedInValue}
+                  control={control}
+                />
+                <PrefixedHandleField
+                  name="sidebar.details.gitHub"
+                  label="GitHub"
+                  icon={Github}
+                  prefix={GITHUB_HANDLE_PREFIX}
+                  parse={parseGitHubHandle}
+                  compose={composeGitHubValue}
+                  control={control}
+                />
+              </div>
+            </AccordionItem>
+
+            <AccordionItem
+              title="Education"
+              variant="nested"
+              open={educationAccordion.open}
+              onOpenChange={educationAccordion.onOpenChange}
+            >
+              <EducationList />
+            </AccordionItem>
+
+            <AccordionItem
+              title="Skills library & visibility"
+              variant="nested"
+              open={skillsAccordion.open}
+              onOpenChange={skillsAccordion.onOpenChange}
+            >
+              <SkillsManager
+                skillLibrary={skillLibrary}
+                onSkillLibraryChange={onSkillLibraryChange}
+              />
+            </AccordionItem>
+
+            <AccordionItem
+              title="Certificates"
+              variant="nested"
+              open={certificatesAccordion.open}
+              onOpenChange={certificatesAccordion.onOpenChange}
+            >
+              <CertificatesList />
+            </AccordionItem>
+
+            <AccordionItem
+              title="Languages"
+              variant="nested"
+              open={languagesAccordion.open}
+              onOpenChange={languagesAccordion.onOpenChange}
+            >
+              <LanguagesList />
+            </AccordionItem>
+
+            <AccordionItem
+              title="Hobbies & interests"
+              variant="nested"
+              open={hobbiesAccordion.open}
+              onOpenChange={hobbiesAccordion.onOpenChange}
+            >
+              <label className={formLabelControlStack}>
+                <span className={formLabelClass}>Interests</span>
+                <textarea
+                  rows={3}
                   className={formFieldSectionClass}
-                  {...register(`sidebar.details.${key}`)}
+                  placeholder=""
+                  {...register("sidebar.hobbiesText")}
                 />
               </label>
-            ))}
-          </div>
-        </Section>
-
-        <Section title="Education">
-          <EducationList />
-        </Section>
-
-        <SkillsLibrarySection
-          skillLibrary={skillLibrary}
-          onSkillLibraryChange={onSkillLibraryChange}
-        />
-
-        <Section title="Certificates">
-          <CertificatesList />
-        </Section>
-
-        <Section title="Languages">
-          <LanguagesList />
-        </Section>
-
-        <Section title="Hobbies & interests">
-          <label className={formLabelControlStack}>
-            <span className={formLabelClass}>Interests</span>
-            <textarea
-              rows={3}
-              className={formFieldSectionClass}
-              placeholder=""
-              {...register("sidebar.hobbiesText")}
-            />
-          </label>
+            </AccordionItem>
+          </AccordionGroup>
         </Section>
       </div>
 
@@ -291,12 +362,72 @@ function SkillsLibrarySection({
   onSkillLibraryChange: (lib: SkillLibrary) => void;
 }) {
   return (
-    <Section title="Skills library & visibility">
+    <AccordionSection title="Skills library & visibility">
       <SkillsManager
         skillLibrary={skillLibrary}
         onSkillLibraryChange={onSkillLibraryChange}
       />
-    </Section>
+    </AccordionSection>
+  );
+}
+
+function PrefixedHandleField({
+  name,
+  label,
+  icon: Icon,
+  prefix,
+  parse,
+  compose,
+  control,
+}: {
+  name: "sidebar.details.linkedIn" | "sidebar.details.gitHub";
+  label: string;
+  icon: LucideIcon;
+  prefix: string;
+  parse: (raw?: string) => string;
+  compose: (handle: string) => string;
+  control: Control<CVData>;
+}) {
+  return (
+    <label className={cn("min-w-0", formLabelControlStack)}>
+      <span className={cn(formLabelClass, "inline-flex items-center gap-1.5")}>
+        <Icon className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400" aria-hidden />
+        {label}
+      </span>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field }) => (
+          <div
+            className={cn(
+              formFieldSectionClass,
+              "flex items-center px-0 py-0",
+              "focus-within:border-violet-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgb(139_92_246_/0.16)]",
+              "dark:focus-within:border-violet-400 dark:focus-within:bg-zinc-950 dark:focus-within:shadow-[0_0_0_3px_rgb(167_139_250_/0.2)]",
+            )}
+          >
+            <span
+              className="shrink-0 select-none pl-3.5 py-2.5 text-[0.9375rem] leading-snug text-zinc-400 dark:text-zinc-500"
+              aria-hidden
+            >
+              {prefix}
+            </span>
+            <input
+              className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pr-3.5 text-[0.9375rem] font-medium leading-snug text-zinc-900 outline-hidden caret-violet-600 placeholder:font-normal placeholder:text-zinc-400 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:caret-violet-400"
+              placeholder="username"
+              value={parse(field.value)}
+              onChange={(e) => field.onChange(compose(e.target.value))}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+              aria-label={`${label} username`}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+        )}
+      />
+    </label>
   );
 }
 

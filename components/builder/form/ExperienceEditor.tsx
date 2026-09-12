@@ -1,7 +1,25 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import { Controller, useFieldArray, useFormContext } from "react-hook-form";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Controller, useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { AccordionGroup, AccordionItem } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
 import { EXPERIENCE_MONTH_OPTIONS } from "@/lib/experience-dates";
@@ -10,9 +28,6 @@ import {
   formFieldsStackClass,
   formLabelClass,
   formLabelControlStack,
-  formNestedGroupClass,
-  formNestedGroupHeaderClass,
-  formNestedGroupTitleClass,
   formSelectSoftClass,
 } from "@/lib/form-styles";
 import { cn } from "@/lib/cn";
@@ -30,17 +45,43 @@ const emptyExp = (): ExperienceItem => ({
   outro: "",
 });
 
+function experienceTitle(index: number, company?: string) {
+  const label = company?.trim();
+  return label ? `Role ${index + 1} - ${label}` : `Role ${index + 1}`;
+}
+
 export function ExperienceEditor() {
-  const { control, register, setValue } = useFormContext<CVData>();
+  const { control } = useFormContext<CVData>();
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: "body.experience",
   });
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const [expandLastId, setExpandLastId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleAdd = () => {
+    append(emptyExp());
+    setExpandLastId("__pending__");
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = fields.findIndex((f) => f.id === active.id);
+    const newIndex = fields.findIndex((f) => f.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    move(oldIndex, newIndex);
+  };
 
   if (fields.length === 0) {
     return (
       <div className="space-y-4">
-        <Button variant="primary" onClick={() => append(emptyExp())}>
+        <Button variant="primary" onClick={handleAdd}>
           <Plus className="size-4 shrink-0 opacity-90" aria-hidden />
           Add experience
         </Button>
@@ -50,44 +91,114 @@ export function ExperienceEditor() {
 
   return (
     <div className="space-y-5">
-      {fields.map((field, index) => (
-        <div key={field.id} className={formNestedGroupClass}>
-          <div className={formNestedGroupHeaderClass}>
-            <span className={formNestedGroupTitleClass}>Role {index + 1}</span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="icon"
-                size="icon"
-                disabled={index === 0}
-                onClick={() => move(index, index - 1)}
-                aria-label="Move experience up"
-              >
-                <ChevronUp className="size-4" aria-hidden />
-              </Button>
-              <Button
-                variant="icon"
-                size="icon"
-                disabled={index === fields.length - 1}
-                onClick={() => move(index, index + 1)}
-                aria-label="Move experience down"
-              >
-                <ChevronDown className="size-4" aria-hidden />
-              </Button>
-              <Button
-                variant="icon-danger"
-                size="icon"
-                onClick={() => remove(index)}
-                aria-label="Remove experience"
-              >
-                <Trash2 className="size-4" aria-hidden />
-              </Button>
-            </div>
-          </div>
-          <div className={formFieldsStackClass}>
-          <label className={formLabelControlStack}>
-            <span className={formLabelClass}>Role</span>
-            <input className={formFieldSoftClass} {...register(`body.experience.${index}.role`)} />
-          </label>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <AccordionGroup className="space-y-4">
+          <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+            {fields.map((field, index) => {
+              const isLast = index === fields.length - 1;
+              const pendingExpand = expandLastId === "__pending__" && isLast;
+              const open =
+                openIds.has(field.id) ||
+                expandLastId === field.id ||
+                pendingExpand;
+
+              return (
+                <SortableExperienceItem
+                  key={field.id}
+                  id={field.id}
+                  index={index}
+                  open={open}
+                  onOpenChange={(nextOpen) => {
+                    if (expandLastId === field.id || pendingExpand) {
+                      setExpandLastId(null);
+                    }
+                    setOpenIds((prev) => {
+                      const next = new Set(prev);
+                      if (nextOpen) next.add(field.id);
+                      else next.delete(field.id);
+                      return next;
+                    });
+                  }}
+                  onRemove={() => remove(index)}
+                />
+              );
+            })}
+          </SortableContext>
+        </AccordionGroup>
+      </DndContext>
+      <Button
+        variant="primary"
+        size="lg"
+        fullWidth
+        className="text-base"
+        onClick={handleAdd}
+      >
+        <Plus className="size-4" aria-hidden />
+        Add experience
+      </Button>
+    </div>
+  );
+}
+
+function SortableExperienceItem({
+  id,
+  index,
+  open,
+  onOpenChange,
+  onRemove,
+}: {
+  id: string;
+  index: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRemove: () => void;
+}) {
+  const { control, register, setValue } = useFormContext<CVData>();
+  const company = useWatch({ control, name: `body.experience.${index}.company` });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(isDragging && "relative z-10 opacity-90")}
+    >
+      <AccordionItem
+        id={id}
+        variant="experience"
+        title={experienceTitle(index, company)}
+        open={open}
+        onOpenChange={onOpenChange}
+        leadingActions={
+          <button
+            type="button"
+            className="flex size-9 cursor-grab items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-200/80 hover:text-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-violet-500/70 active:cursor-grabbing dark:text-zinc-400 dark:hover:bg-zinc-700/80 dark:hover:text-zinc-200"
+            aria-label={`Drag to reorder role ${index + 1}`}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-4" aria-hidden />
+          </button>
+        }
+        trailingActions={
+          <Button
+            variant="icon-danger"
+            size="icon"
+            onClick={onRemove}
+            aria-label={`Remove role ${index + 1}`}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </Button>
+        }
+      >
+        <div className={formFieldsStackClass}>
           <div className="grid gap-6 sm:grid-cols-2">
             <label className={formLabelControlStack}>
               <span className={formLabelClass}>Company</span>
@@ -102,6 +213,10 @@ export function ExperienceEditor() {
               />
             </label>
           </div>
+          <label className={formLabelControlStack}>
+            <span className={formLabelClass}>Role</span>
+            <input className={formFieldSoftClass} {...register(`body.experience.${index}.role`)} />
+          </label>
           <div className="grid gap-6 sm:grid-cols-2">
             <fieldset className="space-y-2 sm:col-span-1">
               <legend className={formLabelClass}>Start</legend>
@@ -222,54 +337,106 @@ export function ExperienceEditor() {
             <span className={formLabelClass}>Outro (learned / growth)</span>
             <textarea rows={2} className={formFieldSoftClass} {...register(`body.experience.${index}.outro`)} />
           </label>
-          </div>
         </div>
-      ))}
-      <Button
-        variant="primary"
-        size="lg"
-        fullWidth
-        className="text-base"
-        onClick={() => append(emptyExp())}
-      >
-        <Plus className="size-4" aria-hidden />
-        Add experience
-      </Button>
+      </AccordionItem>
     </div>
   );
 }
 
 function BulletsEditor({ index }: { index: number }) {
-  const { control, register } = useFormContext<CVData>();
-  const { fields, append, remove } = useFieldArray({
+  const { control } = useFormContext<CVData>();
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: `body.experience.${index}.bullets` as never,
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = fields.findIndex((f) => f.id === active.id);
+    const newIndex = fields.findIndex((f) => f.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    move(oldIndex, newIndex);
+  };
+
   return (
     <fieldset className="space-y-3">
       <legend className={formLabelClass}>Bullets</legend>
-      <div className="space-y-3">
-        {fields.map((f, bi) => (
-          <div key={f.id} className="flex gap-2">
-            <input
-              className={cn(formFieldSoftClass, "min-w-0 flex-1")}
-              {...register(`body.experience.${index}.bullets.${bi}`)}
-            />
-            <Button
-              variant="icon-danger"
-              size="icon"
-              onClick={() => remove(bi)}
-              aria-label="Remove bullet"
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </Button>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {fields.map((f, bi) => (
+              <SortableBulletRow
+                key={f.id}
+                id={f.id}
+                bulletIndex={bi}
+                experienceIndex={index}
+                onRemove={() => remove(bi)}
+              />
+            ))}
           </div>
-        ))}
-        <Button variant="text" onClick={() => append("" as never)}>
-          + Add bullet
-        </Button>
-      </div>
+        </SortableContext>
+      </DndContext>
+      <Button variant="text" onClick={() => append("" as never)}>
+        + Add bullet
+      </Button>
     </fieldset>
+  );
+}
+
+function SortableBulletRow({
+  id,
+  bulletIndex,
+  experienceIndex,
+  onRemove,
+}: {
+  id: string;
+  bulletIndex: number;
+  experienceIndex: number;
+  onRemove: () => void;
+}) {
+  const { register } = useFormContext<CVData>();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("flex items-center gap-2", isDragging && "relative z-10 opacity-90")}
+    >
+      <button
+        type="button"
+        className="flex size-9 shrink-0 cursor-grab items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-200/80 hover:text-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-violet-500/70 active:cursor-grabbing dark:text-zinc-400 dark:hover:bg-zinc-700/80 dark:hover:text-zinc-200"
+        aria-label={`Drag to reorder bullet ${bulletIndex + 1}`}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-4" aria-hidden />
+      </button>
+      <input
+        className={cn(formFieldSoftClass, "min-w-0 flex-1")}
+        {...register(`body.experience.${experienceIndex}.bullets.${bulletIndex}`)}
+      />
+      <Button
+        variant="icon-danger"
+        size="icon"
+        onClick={onRemove}
+        aria-label={`Remove bullet ${bulletIndex + 1}`}
+      >
+        <Trash2 className="size-4" aria-hidden />
+      </Button>
+    </div>
   );
 }

@@ -64,6 +64,10 @@
   page-break-inside: avoid;
 }
 
+.cv-print-skill-category p + p {
+  margin-top: 0.125rem;
+}
+
 .cv-print-sidebar-skills {
   break-inside: auto;
   page-break-inside: auto;
@@ -73,6 +77,15 @@
 .cv-print-edu-entry {
   break-inside: avoid-page;
   page-break-inside: avoid;
+}
+
+.cv-print-edu-entry p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.cv-print-edu-entry p + p {
+  margin-top: 0.25rem;
 }
 
 .cv-print-job li {
@@ -92,6 +105,7 @@
 }
 
 .cv-print-page-header {
+  align-items: center;
   break-inside: avoid-page;
   page-break-inside: avoid;
 }

@@ -9,7 +9,6 @@ export const skillCategoryIdSchema = z.enum([
   "aiAutomation",
   "principles",
   "cms",
-  "os",
 ]);
 
 export type SkillCategoryId = z.infer<typeof skillCategoryIdSchema>;
@@ -158,12 +157,53 @@ export const cvExportBundleSchema = z.object({
 
 export type CVExportBundle = z.infer<typeof cvExportBundleSchema>;
 
+export const SKILL_CATEGORY_ORDER = [
+  "frontEnd",
+  "uiUx",
+  "tools",
+  "aiAutomation",
+  "principles",
+  "cms",
+] as const satisfies readonly SkillCategoryId[];
+
 export const SKILL_CATEGORY_LABELS: Record<SkillCategoryId, string> = {
-  frontEnd: "Front end",
-  uiUx: "UI/UX design",
-  tools: "Tools",
+  frontEnd: "Frontend Engineering",
+  uiUx: "Product, UI/UX & Accessibility",
+  tools: "Tools & Delivery",
   aiAutomation: "AI & Automation",
-  principles: "Principles",
-  cms: "CMS",
-  os: "OS",
+  principles: "Performance, SEO & Experimentation",
+  cms: "Backend, CMS & APIs",
 };
+
+export function orderedSkillCategoryIds(
+  skills: SkillCategorySelection[] | undefined,
+): SkillCategoryId[] {
+  const allowed = new Set<SkillCategoryId>(SKILL_CATEGORY_ORDER);
+  const ordered: SkillCategoryId[] = [];
+  for (const s of skills ?? []) {
+    if (allowed.has(s.categoryId) && !ordered.includes(s.categoryId)) {
+      ordered.push(s.categoryId);
+    }
+  }
+  for (const id of SKILL_CATEGORY_ORDER) {
+    if (!ordered.includes(id)) ordered.push(id);
+  }
+  return ordered;
+}
+
+export function normalizeSkillSelections(
+  skills: SkillCategorySelection[] | undefined,
+): SkillCategorySelection[] {
+  const byId = new Map<SkillCategoryId, SkillCategorySelection>();
+  for (const s of skills ?? []) {
+    if ((SKILL_CATEGORY_ORDER as readonly SkillCategoryId[]).includes(s.categoryId)) {
+      byId.set(s.categoryId, {
+        categoryId: s.categoryId,
+        visibleTags: [...(s.visibleTags ?? [])],
+      });
+    }
+  }
+  return orderedSkillCategoryIds(skills).map(
+    (categoryId) => byId.get(categoryId) ?? { categoryId, visibleTags: [] },
+  );
+}

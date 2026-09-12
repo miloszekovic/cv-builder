@@ -2,6 +2,7 @@ import {
   cvDataSchema,
   cvExportBundleSchema,
   skillCategoryIdSchema,
+  SKILL_CATEGORY_LABELS,
   type CVData,
   type CVVersionMeta,
   type SkillCategoryId,
@@ -25,6 +26,23 @@ function safeParseJson<T>(raw: string | null): T | null {
   } catch {
     return null;
   }
+}
+
+function migrateStoredCvRaw(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const cv = raw as Record<string, unknown>;
+  const sidebar = cv.sidebar;
+  if (!sidebar || typeof sidebar !== "object") return raw;
+  const sb = { ...(sidebar as Record<string, unknown>) };
+  if (Array.isArray(sb.skills)) {
+    sb.skills = sb.skills.filter(
+      (s) =>
+        s &&
+        typeof s === "object" &&
+        (s as { categoryId?: string }).categoryId !== "os",
+    );
+  }
+  return { ...cv, sidebar: sb };
 }
 
 function newId() {
@@ -68,7 +86,7 @@ function ensureSkillLibrary(): SkillLibrary {
       const incoming = parsed[id];
       if (incoming?.tags?.length) {
         result[id] = {
-          label: incoming.label || result[id].label,
+          label: SKILL_CATEGORY_LABELS[id],
           tags: [...new Set(incoming.tags.map(String))],
         };
       }
@@ -121,7 +139,7 @@ export const localCvStorage: CvStoragePort = {
   getCv(versionId) {
     if (typeof window === "undefined") return null;
     const raw = localStorage.getItem(versionKey(versionId));
-    const parsed = raw ? safeParseJson<unknown>(raw) : null;
+    const parsed = raw ? migrateStoredCvRaw(safeParseJson<unknown>(raw)) : null;
     const r = cvDataSchema.safeParse(parsed);
     return r.success ? r.data : null;
   },

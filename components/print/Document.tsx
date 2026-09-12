@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { getCvAccent } from "@/lib/cv-accents";
 import { cvTemplateUsesSingleColumn, normalizeCvTemplate } from "@/lib/cv-templates";
-import type { CVData, Details, ExperienceItem, SkillCategoryId } from "@/lib/cv-schema";
+import type { CVData, Details, ExperienceItem } from "@/lib/cv-schema";
+import { SKILL_CATEGORY_LABELS } from "@/lib/cv-schema";
 import {
   effectivePhotoMode,
   initialsFromName,
@@ -21,21 +22,9 @@ import {
   hasExperiencePeriod,
 } from "@/lib/experience-dates";
 
-/** Section headings aligned with classic resume PDF export. */
-const SKILL_PRINT_LABELS: Record<SkillCategoryId, string> = {
-  frontEnd: "Front-End Development",
-  uiUx: "UI/UX Design",
-  tools: "Tools",
-  aiAutomation: "AI & Automation",
-  principles: "Principles",
-  cms: "Content Management Systems",
-  os: "Operating Systems",
-};
-
 function hasText(s?: string | null) {
   return Boolean(s?.trim());
 }
-
 
 function experienceHasContent(exp: ExperienceItem): boolean {
   return (
@@ -213,7 +202,7 @@ function SidebarColumn({
   const skillBlocks = (cv.sidebar.skills ?? [])
     .map((s) => ({
       ...s,
-      title: SKILL_PRINT_LABELS[s.categoryId],
+      title: SKILL_CATEGORY_LABELS[s.categoryId],
       tags: (s.visibleTags ?? []).filter(hasText),
     }))
     .filter((s) => s.tags.length > 0);
@@ -228,14 +217,10 @@ function SidebarColumn({
             {edu.map((e, i) => (
               <div key={i} className="cv-print-edu-entry">
                 {hasText(e.university) && (
-                  <p>
-                    <span className="font-bold text-slate-950">University:</span>{" "}
-                    {e.university}
-                  </p>
+                  <p className="m-0 font-bold leading-snug text-slate-950">{e.university}</p>
                 )}
                 {hasText(e.title) && (
-                  <p className="mt-1">
-                    <span className="font-bold text-slate-950">Title:</span>{" "}
+                  <p className={cn("m-0 leading-snug", hasText(e.university) && "mt-1")}>
                     {e.title}
                   </p>
                 )}
@@ -253,7 +238,7 @@ function SidebarColumn({
                 <p className="text-[10.5px] font-bold text-slate-950">
                   {s.title}:
                 </p>
-                <p className="mt-1 text-[10px] leading-relaxed text-slate-800">
+                <p className="mt-0.5 text-[10px] leading-relaxed text-slate-800">
                   {s.tags.join(", ")}
                 </p>
               </div>
@@ -264,19 +249,19 @@ function SidebarColumn({
       {certs && certs.length > 0 && (
         <section className="cv-print-sidebar-section">
           <PrintSectionTitle>CERTIFICATES</PrintSectionTitle>
-          <ul className="space-y-2 text-[10.5px] text-slate-800">
+          <div className="space-y-2 text-[10.5px] text-slate-800">
             {certs.map((c, i) => (
-              <li key={i} className="leading-snug">
+              <p key={i} className="m-0 leading-snug">
                 {c.year != null && (
-                  <span className="font-bold tabular-nums text-slate-950">
-                    {c.year}
-                  </span>
+                  <>
+                    <span className="font-bold tabular-nums text-slate-950">{c.year}</span>
+                    {hasText(c.name) ? `: ${c.name}` : null}
+                  </>
                 )}
-                {c.year != null && hasText(c.name) && " "}
-                {c.name}
-              </li>
+                {c.year == null && hasText(c.name) ? c.name : null}
+              </p>
             ))}
-          </ul>
+          </div>
         </section>
       )}
       {langs && langs.length > 0 && (
@@ -327,7 +312,7 @@ export function Document({
   const header = (showName || showAvatar) && (
     <header
       className={cn(
-        "cv-print-page-header mb-8 flex gap-4 items-end",
+        "cv-print-page-header mb-8 flex items-center gap-4",
         templateId === "nordic" && "cv-print-nordic-header flex-col items-center text-center gap-2 mb-10",
         templateId === "mono" && "cv-print-mono-header border-b border-slate-300 pb-6 mb-7",
       )}
@@ -359,8 +344,8 @@ export function Document({
       )}
       <div
         className={cn(
-          "min-w-0 flex-1",
-          templateId === "nordic" && "flex flex-col items-center",
+          "flex min-w-0 flex-1 flex-col justify-center",
+          templateId === "nordic" && "items-center",
         )}
       >
         {hasText(cv.body.name) && (
