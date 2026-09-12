@@ -150,6 +150,7 @@ export const blankCvData = (): CVData => {
     },
     sidebar: {
       details: {
+        birthDate: "",
         location: "",
         email: "",
         phone: "",
@@ -302,6 +303,7 @@ export const exampleCvData = (): CVData => {
     },
     sidebar: {
       details: {
+        birthDate: "15 March 1988",
         location: "Oslo, Norway (demo)",
         email: "jordan.demo@example.com",
         phone: "+47 12 34 56 78",

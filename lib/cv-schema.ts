@@ -18,6 +18,7 @@ export const endYearSchema = z.union([z.number().int(), z.literal("present")]);
 export type EndYear = z.infer<typeof endYearSchema>;
 
 export const detailsSchema = z.object({
+  birthDate: z.string().optional(),
   location: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),

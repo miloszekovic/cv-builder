@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Cake,
   Github,
   Globe,
   Linkedin,
@@ -230,6 +231,7 @@ export function Form({
               <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
                 {(
                   [
+                    { key: "birthDate" as const, lab: "Birth date", Icon: Cake },
                     { key: "location" as const, lab: "Location", Icon: MapPin },
                     { key: "email" as const, lab: "Email", Icon: Mail },
                     { key: "phone" as const, lab: "Phone", Icon: Phone },

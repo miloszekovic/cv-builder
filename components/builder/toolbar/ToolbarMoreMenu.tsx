@@ -149,18 +149,6 @@ export function ToolbarMoreMenu({
               <Upload className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
               Import JSON
             </Button>
-            <input
-              ref={importRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              aria-label="Choose JSON file to import into this CV"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onImportFile(f);
-                e.target.value = "";
-              }}
-            />
             <div className="my-1 border-t border-zinc-200/70 dark:border-zinc-800" role="separator" />
             <Button
               variant="menu-item"
@@ -181,6 +169,18 @@ export function ToolbarMoreMenu({
 
   return (
     <div ref={rootRef} className="relative">
+      <input
+        ref={importRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        aria-label="Choose JSON file to import into this CV"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onImportFile(f);
+          e.target.value = "";
+        }}
+      />
       <Button
         ref={buttonRef}
         variant="outline"

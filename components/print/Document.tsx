@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
+  Cake,
   Github,
   Globe,
   Linkedin,
@@ -67,6 +68,7 @@ function DetailRow({
 function DetailsBlock({ details }: { details?: Details }) {
   if (!details) return null;
   const rows: { key: string; icon: ReactNode; value?: string }[] = [
+    { key: "bd", icon: <Cake />, value: details.birthDate },
     { key: "loc", icon: <MapPin />, value: details.location },
     { key: "em", icon: <Mail />, value: details.email },
     { key: "ph", icon: <Phone />, value: details.phone },

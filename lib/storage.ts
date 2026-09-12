@@ -28,21 +28,42 @@ function safeParseJson<T>(raw: string | null): T | null {
   }
 }
 
-function migrateStoredCvRaw(raw: unknown): unknown {
+function migrateCvPayload(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
-  const cv = raw as Record<string, unknown>;
-  const sidebar = cv.sidebar;
-  if (!sidebar || typeof sidebar !== "object") return raw;
-  const sb = { ...(sidebar as Record<string, unknown>) };
-  if (Array.isArray(sb.skills)) {
-    sb.skills = sb.skills.filter(
-      (s) =>
-        s &&
-        typeof s === "object" &&
-        (s as { categoryId?: string }).categoryId !== "os",
-    );
+  const cv = { ...(raw as Record<string, unknown>) };
+  const meta = cv.meta;
+  if (!meta || typeof meta !== "object") {
+    cv.meta = { sidebarPosition: "right" };
+  } else {
+    const m = { ...(meta as Record<string, unknown>) };
+    if (m.sidebarPosition !== "left" && m.sidebarPosition !== "right") {
+      m.sidebarPosition = "right";
+    }
+    cv.meta = m;
   }
-  return { ...cv, sidebar: sb };
+  const sidebar = cv.sidebar;
+  if (sidebar && typeof sidebar === "object") {
+    const sb = { ...(sidebar as Record<string, unknown>) };
+    if (Array.isArray(sb.skills)) {
+      sb.skills = sb.skills.filter(
+        (s) =>
+          s &&
+          typeof s === "object" &&
+          (s as { categoryId?: string }).categoryId !== "os",
+      );
+    }
+    cv.sidebar = sb;
+  }
+  return cv;
+}
+
+function migrateImportPayload(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const obj = raw as Record<string, unknown>;
+  if ("cv" in obj) {
+    return { ...obj, cv: migrateCvPayload(obj.cv) };
+  }
+  return migrateCvPayload(raw);
 }
 
 function newId() {
@@ -139,7 +160,7 @@ export const localCvStorage: CvStoragePort = {
   getCv(versionId) {
     if (typeof window === "undefined") return null;
     const raw = localStorage.getItem(versionKey(versionId));
-    const parsed = raw ? migrateStoredCvRaw(safeParseJson<unknown>(raw)) : null;
+    const parsed = raw ? migrateCvPayload(safeParseJson<unknown>(raw)) : null;
     const r = cvDataSchema.safeParse(parsed);
     return r.success ? r.data : null;
   },
@@ -244,7 +265,8 @@ export const localCvStorage: CvStoragePort = {
   importJson(json) {
     const parsed = safeParseJson<unknown>(json);
     if (!parsed || typeof parsed !== "object") return null;
-    const asBundle = cvExportBundleSchema.safeParse(parsed);
+    const migrated = migrateImportPayload(parsed);
+    const asBundle = cvExportBundleSchema.safeParse(migrated);
     if (asBundle.success) {
       const incomingLib = asBundle.data.skillLibrary;
       let skillLibrary: SkillLibrary | undefined;
@@ -263,7 +285,7 @@ export const localCvStorage: CvStoragePort = {
       }
       return { cv: asBundle.data.cv, skillLibrary };
     }
-    const asCv = cvDataSchema.safeParse(parsed);
+    const asCv = cvDataSchema.safeParse(migrated);
     if (asCv.success) return { cv: asCv.data };
     return null;
   },

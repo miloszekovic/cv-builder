@@ -285,8 +285,11 @@ export function Builder() {
                 localCvStorage.setSkillLibrary(parsed.skillLibrary);
                 setSkillLibraryState(parsed.skillLibrary);
               }
-              form.reset(withDefaultMetaAccent(normalizeCvForForm(parsed.cv)));
-              localCvStorage.saveCv(activeId, parsed.cv);
+              const normalized = withDefaultMetaAccent(
+                normalizeCvForForm(parsed.cv),
+              );
+              form.reset(normalized);
+              localCvStorage.saveCv(activeId, normalized);
               setVersions(localCvStorage.listVersions());
             }}
             onLoadExample={() => setLoadDemoOpen(true)}
