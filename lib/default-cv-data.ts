@@ -1,9 +1,11 @@
 import type {
   CVData,
+  ExperienceBullet,
   ExperienceItem,
   SkillCategoryId,
   SkillLibrary,
 } from "./cv-schema";
+import { normalizeExperienceBullet } from "./cv-visibility";
 import {
   SKILL_CATEGORY_LABELS,
   SKILL_CATEGORY_ORDER,
@@ -155,9 +157,15 @@ export const blankCvData = (): CVData => {
         email: "",
         phone: "",
         website: "",
+        portfolio: "",
+        workAuthorization: "",
+        availability: "",
+        workMode: "",
+        drivingLicense: "",
         linkedIn: "",
         gitHub: "",
       },
+      detailsEnabled: {},
       skills: emptySkillSelections(),
       education: [],
       certificates: [],
@@ -169,9 +177,14 @@ export const blankCvData = (): CVData => {
 };
 
 function normalizeExperienceRow(row: ExperienceItem): ExperienceItem {
-  const bullets =
-    row.bullets && row.bullets.length > 0 ? [...row.bullets] : [""];
+  const bullets: ExperienceBullet[] =
+    row.bullets && row.bullets.length > 0
+      ? row.bullets.map((b) =>
+          normalizeExperienceBullet(b as string | ExperienceBullet),
+        )
+      : [{ text: "", enabled: true }];
   return {
+    enabled: row.enabled !== false,
     role: row.role ?? "",
     company: row.company ?? "",
     country: row.country ?? "",
@@ -201,6 +214,10 @@ export function normalizeCvForForm(cv: CVData): CVData {
       ...b.sidebar,
       ...cv.sidebar,
       details: { ...b.sidebar.details, ...cv.sidebar?.details },
+      detailsEnabled: {
+        ...b.sidebar.detailsEnabled,
+        ...cv.sidebar?.detailsEnabled,
+      },
       education: cv.sidebar?.education ?? b.sidebar.education,
       skills: normalizeSkillSelections(cv.sidebar?.skills ?? b.sidebar.skills),
       certificates: cv.sidebar?.certificates ?? b.sidebar.certificates,
@@ -217,7 +234,7 @@ export function normalizeCvForForm(cv: CVData): CVData {
  */
 export const exampleCvData = (): CVData => {
   const lib = createDefaultSkillLibrary();
-  return {
+  return normalizeCvForForm({
     meta: {
       versionName: "Demo Showcase CV",
       targetRole: "Senior Front-End Engineer",
@@ -308,6 +325,11 @@ export const exampleCvData = (): CVData => {
         email: "jordan.demo@example.com",
         phone: "+47 12 34 56 78",
         website: "https://demo-cv.example.com",
+        portfolio: "https://portfolio.demo-cv.example.com",
+        workAuthorization: "EU citizen",
+        availability: "Available immediately",
+        workMode: "Remote / hybrid",
+        drivingLicense: "Category B",
         linkedIn: "linkedin.com/in/jordan-demo",
         gitHub: "github.com/jordan-demo",
       },
@@ -340,5 +362,5 @@ export const exampleCvData = (): CVData => {
       hobbiesText:
         "I contribute small patches to OSS UI libraries and occasionally mentor bootcamp graduates through mock interviews and portfolio reviews. Outside work I enjoy film photography, gravel cycling, and local meetups.",
     },
-  };
+  } as CVData);
 };

@@ -1,16 +1,21 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
+  BadgeCheck,
   Cake,
+  CalendarClock,
+  Car,
   Github,
   Globe,
+  Laptop,
   Linkedin,
   Mail,
   MapPin,
+  Palette,
   Phone,
 } from "lucide-react";
 import { getCvAccent } from "@/lib/cv-accents";
 import { cvTemplateUsesSingleColumn, normalizeCvTemplate } from "@/lib/cv-templates";
-import type { CVData, Details, ExperienceItem } from "@/lib/cv-schema";
+import type { CVData, DetailFieldKey, Details, ExperienceItem } from "@/lib/cv-schema";
 import { SKILL_CATEGORY_LABELS } from "@/lib/cv-schema";
 import {
   effectivePhotoMode,
@@ -22,27 +27,35 @@ import {
   formatExperiencePeriod,
   hasExperiencePeriod,
 } from "@/lib/experience-dates";
+import {
+  DETAIL_FIELD_KEYS,
+  experienceHasVisibleContent,
+  isDetailFieldVisible,
+  isExperienceEnabled,
+  visibleBullets,
+} from "@/lib/cv-visibility";
 
 function hasText(s?: string | null) {
   return Boolean(s?.trim());
 }
 
-function experienceHasContent(exp: ExperienceItem): boolean {
-  return (
-    hasText(exp.role) ||
-    hasText(exp.company) ||
-    hasText(exp.country) ||
-    hasText(exp.intro) ||
-    hasText(exp.outro) ||
-    (exp.bullets?.some(hasText) ?? false) ||
-    hasExperiencePeriod(
-      exp.startMonth,
-      exp.startYear,
-      exp.endMonth,
-      exp.endYear,
-    )
-  );
-}
+const DETAIL_ICONS: Record<
+  DetailFieldKey,
+  ReactNode
+> = {
+  birthDate: <Cake />,
+  location: <MapPin />,
+  email: <Mail />,
+  phone: <Phone />,
+  website: <Globe />,
+  portfolio: <Palette />,
+  workAuthorization: <BadgeCheck />,
+  availability: <CalendarClock />,
+  workMode: <Laptop />,
+  drivingLicense: <Car />,
+  linkedIn: <Linkedin />,
+  gitHub: <Github />,
+};
 
 function PrintSectionTitle({ children }: { children: ReactNode }) {
   return <h2 className="cv-print-section-title mt-0 first:mt-0">{children}</h2>;
@@ -65,18 +78,19 @@ function DetailRow({
   );
 }
 
-function DetailsBlock({ details }: { details?: Details }) {
+function DetailsBlock({
+  details,
+  detailsEnabled,
+}: {
+  details?: Details;
+  detailsEnabled?: CVData["sidebar"]["detailsEnabled"];
+}) {
   if (!details) return null;
-  const rows: { key: string; icon: ReactNode; value?: string }[] = [
-    { key: "bd", icon: <Cake />, value: details.birthDate },
-    { key: "loc", icon: <MapPin />, value: details.location },
-    { key: "em", icon: <Mail />, value: details.email },
-    { key: "ph", icon: <Phone />, value: details.phone },
-    { key: "web", icon: <Globe />, value: details.website },
-    { key: "li", icon: <Linkedin />, value: details.linkedIn },
-    { key: "gh", icon: <Github />, value: details.gitHub },
-  ];
-  const visible = rows.filter((r) => hasText(r.value));
+  const rows = DETAIL_FIELD_KEYS.flatMap((key) => {
+    if (!isDetailFieldVisible(key, details, detailsEnabled)) return [];
+    return [{ key, icon: DETAIL_ICONS[key], value: details[key] }];
+  });
+  const visible = rows;
   if (visible.length === 0) return null;
   return (
     <section className="cv-print-sidebar-section">
@@ -94,13 +108,13 @@ function DetailsBlock({ details }: { details?: Details }) {
 
 function ExperienceBlock({ items }: { items?: ExperienceItem[] }) {
   if (!items?.length) return null;
-  const any = items.some(experienceHasContent);
-  if (!any) return null;
+  const visible = items.filter(experienceHasVisibleContent);
+  if (visible.length === 0) return null;
   return (
     <section className="cv-print-experience-group space-y-6">
       <PrintSectionTitle>EXPERIENCE</PrintSectionTitle>
       <div className="space-y-6">
-        {items.map((exp, i) => (
+        {visible.map((exp, i) => (
           <div key={i} className="cv-print-experience-item">
             <ExperienceItemView exp={exp} />
           </div>
@@ -117,7 +131,7 @@ function ExperienceItemView({ exp }: { exp: ExperienceItem }) {
     exp.endMonth,
     exp.endYear,
   );
-  const bullets = (exp.bullets ?? []).filter(hasText);
+  const bullets = visibleBullets(exp);
   const hasRole = hasText(exp.role);
   const hasCompany = hasText(exp.company);
   const hasCountry = hasText(exp.country);
@@ -129,7 +143,7 @@ function ExperienceItemView({ exp }: { exp: ExperienceItem }) {
     hasText(exp.outro) ||
     bullets.length > 0 ||
     period;
-  if (!hasBlock) return null;
+  if (!hasBlock || !isExperienceEnabled(exp)) return null;
 
   return (
     <article className="cv-print-job space-y-2">
@@ -169,7 +183,7 @@ function ExperienceItemView({ exp }: { exp: ExperienceItem }) {
           </p>
           <ul className="list-disc pl-[1.1em] space-y-1 text-[10.5px] leading-relaxed text-slate-800 marker:text-slate-900">
             {bullets.map((b, j) => (
-              <li key={j}>{b}</li>
+              <li key={j}>{b.text}</li>
             ))}
           </ul>
         </>
@@ -211,7 +225,7 @@ function SidebarColumn({
 
   return (
     <aside className="min-w-0 space-y-7">
-      <DetailsBlock details={d} />
+      <DetailsBlock details={d} detailsEnabled={cv.sidebar.detailsEnabled} />
       {edu && edu.length > 0 && (
         <section className="cv-print-sidebar-section">
           <PrintSectionTitle>EDUCATION</PrintSectionTitle>

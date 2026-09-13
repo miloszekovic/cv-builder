@@ -17,21 +17,70 @@ export const endYearSchema = z.union([z.number().int(), z.literal("present")]);
 
 export type EndYear = z.infer<typeof endYearSchema>;
 
+export const detailFieldKeySchema = z.enum([
+  "birthDate",
+  "location",
+  "email",
+  "phone",
+  "website",
+  "portfolio",
+  "workAuthorization",
+  "availability",
+  "workMode",
+  "drivingLicense",
+  "linkedIn",
+  "gitHub",
+]);
+
+export type DetailFieldKey = z.infer<typeof detailFieldKeySchema>;
+
 export const detailsSchema = z.object({
   birthDate: z.string().optional(),
   location: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),
   website: z.string().optional(),
+  portfolio: z.string().optional(),
+  workAuthorization: z.string().optional(),
+  availability: z.string().optional(),
+  workMode: z.string().optional(),
+  drivingLicense: z.string().optional(),
   linkedIn: z.string().optional(),
   gitHub: z.string().optional(),
 });
 
 export type Details = z.infer<typeof detailsSchema>;
 
+const detailsEnabledFieldsSchema = z.object({
+  birthDate: z.boolean().optional(),
+  location: z.boolean().optional(),
+  email: z.boolean().optional(),
+  phone: z.boolean().optional(),
+  website: z.boolean().optional(),
+  portfolio: z.boolean().optional(),
+  workAuthorization: z.boolean().optional(),
+  availability: z.boolean().optional(),
+  workMode: z.boolean().optional(),
+  drivingLicense: z.boolean().optional(),
+  linkedIn: z.boolean().optional(),
+  gitHub: z.boolean().optional(),
+});
+
+export type DetailsEnabled = z.infer<typeof detailsEnabledFieldsSchema>;
+
+export const detailsEnabledSchema = detailsEnabledFieldsSchema.optional();
+
 export const experienceMonthSchema = z.number().int().min(1).max(12);
 
+export const experienceBulletSchema = z.object({
+  text: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+export type ExperienceBullet = z.infer<typeof experienceBulletSchema>;
+
 export const experienceItemSchema = z.object({
+  enabled: z.boolean().optional(),
   role: z.string().optional(),
   company: z.string().optional(),
   country: z.string().optional(),
@@ -40,7 +89,7 @@ export const experienceItemSchema = z.object({
   endMonth: experienceMonthSchema.optional(),
   endYear: endYearSchema.optional(),
   intro: z.string().optional(),
-  bullets: z.array(z.string()).optional(),
+  bullets: z.array(experienceBulletSchema).optional(),
   outro: z.string().optional(),
 });
 
@@ -103,6 +152,7 @@ export const bodySchema = z.object({
 
 export const sidebarSchema = z.object({
   details: detailsSchema.optional(),
+  detailsEnabled: detailsEnabledSchema,
   education: z.array(educationItemSchema).optional(),
   skills: z.array(skillCategorySelectionSchema).optional(),
   certificates: z.array(certificateItemSchema).optional(),

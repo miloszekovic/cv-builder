@@ -21,6 +21,7 @@ import { useState } from "react";
 import { Controller, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { AccordionGroup, AccordionItem } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
+import { VisibilityToggle } from "@/components/ui/VisibilityToggle";
 import type { CVData, ExperienceItem } from "@/lib/cv-schema";
 import { EXPERIENCE_MONTH_OPTIONS } from "@/lib/experience-dates";
 import {
@@ -33,6 +34,7 @@ import {
 import { cn } from "@/lib/cn";
 
 const emptyExp = (): ExperienceItem => ({
+  enabled: true,
   role: "",
   company: "",
   country: "",
@@ -41,7 +43,7 @@ const emptyExp = (): ExperienceItem => ({
   endMonth: undefined,
   endYear: undefined,
   intro: "",
-  bullets: [""],
+  bullets: [{ text: "", enabled: true }],
   outro: "",
 });
 
@@ -155,6 +157,8 @@ function SortableExperienceItem({
 }) {
   const { control, register, setValue } = useFormContext<CVData>();
   const company = useWatch({ control, name: `body.experience.${index}.company` });
+  const enabled = useWatch({ control, name: `body.experience.${index}.enabled` });
+  const visibleOnCv = enabled !== false;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
@@ -173,9 +177,19 @@ function SortableExperienceItem({
       <AccordionItem
         id={id}
         variant="experience"
-        title={experienceTitle(index, company)}
+        title={
+          <>
+            {experienceTitle(index, company)}
+            {!visibleOnCv && (
+              <span className="ml-2 text-xs font-normal text-zinc-400 dark:text-zinc-500">
+                (hidden)
+              </span>
+            )}
+          </>
+        }
         open={open}
         onOpenChange={onOpenChange}
+        className={!visibleOnCv ? "opacity-70" : undefined}
         leadingActions={
           <button
             type="button"
@@ -188,14 +202,25 @@ function SortableExperienceItem({
           </button>
         }
         trailingActions={
-          <Button
-            variant="icon-danger"
-            size="icon"
-            onClick={onRemove}
-            aria-label={`Remove role ${index + 1}`}
-          >
-            <Trash2 className="size-4" aria-hidden />
-          </Button>
+          <div className="flex items-center gap-1">
+            <VisibilityToggle
+              visible={visibleOnCv}
+              label={experienceTitle(index, company)}
+              onToggle={() =>
+                setValue(`body.experience.${index}.enabled`, !visibleOnCv, {
+                  shouldDirty: true,
+                })
+              }
+            />
+            <Button
+              variant="icon-danger"
+              size="icon"
+              onClick={onRemove}
+              aria-label={`Remove role ${index + 1}`}
+            >
+              <Trash2 className="size-4" aria-hidden />
+            </Button>
+          </div>
         }
       >
         <div className={formFieldsStackClass}>
@@ -382,7 +407,10 @@ function BulletsEditor({ index }: { index: number }) {
           </div>
         </SortableContext>
       </DndContext>
-      <Button variant="text" onClick={() => append("" as never)}>
+      <Button
+        variant="text"
+        onClick={() => append({ text: "", enabled: true } as never)}
+      >
         + Add bullet
       </Button>
     </fieldset>
@@ -400,7 +428,12 @@ function SortableBulletRow({
   experienceIndex: number;
   onRemove: () => void;
 }) {
-  const { register } = useFormContext<CVData>();
+  const { control, register, setValue } = useFormContext<CVData>();
+  const enabled = useWatch({
+    control,
+    name: `body.experience.${experienceIndex}.bullets.${bulletIndex}.enabled`,
+  });
+  const visibleOnCv = enabled !== false;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
@@ -426,8 +459,25 @@ function SortableBulletRow({
         <GripVertical className="size-4" aria-hidden />
       </button>
       <input
-        className={cn(formFieldSoftClass, "min-w-0 flex-1")}
-        {...register(`body.experience.${experienceIndex}.bullets.${bulletIndex}`)}
+        className={cn(
+          formFieldSoftClass,
+          "min-w-0 flex-1",
+          !visibleOnCv && "opacity-60",
+        )}
+        {...register(
+          `body.experience.${experienceIndex}.bullets.${bulletIndex}.text`,
+        )}
+      />
+      <VisibilityToggle
+        visible={visibleOnCv}
+        label={`Bullet ${bulletIndex + 1}`}
+        onToggle={() =>
+          setValue(
+            `body.experience.${experienceIndex}.bullets.${bulletIndex}.enabled`,
+            !visibleOnCv,
+            { shouldDirty: true },
+          )
+        }
       />
       <Button
         variant="icon-danger"

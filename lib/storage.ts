@@ -54,6 +54,25 @@ function migrateCvPayload(raw: unknown): unknown {
     }
     cv.sidebar = sb;
   }
+  const body = cv.body;
+  if (body && typeof body === "object") {
+    const b = { ...(body as Record<string, unknown>) };
+    if (Array.isArray(b.experience)) {
+      b.experience = b.experience.map((row) => {
+        if (!row || typeof row !== "object") return row;
+        const exp = { ...(row as Record<string, unknown>) };
+        if (Array.isArray(exp.bullets)) {
+          exp.bullets = exp.bullets.map((bullet) =>
+            typeof bullet === "string"
+              ? { text: bullet, enabled: true }
+              : bullet,
+          );
+        }
+        return exp;
+      });
+    }
+    cv.body = b;
+  }
   return cv;
 }
 

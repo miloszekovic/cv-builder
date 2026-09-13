@@ -1,8 +1,12 @@
 "use client";
 
 import {
+  BadgeCheck,
   Cake,
+  CalendarClock,
+  Car,
   Github,
+  Laptop,
   Globe,
   Linkedin,
   Loader2,
@@ -10,6 +14,7 @@ import {
   MapPin,
   PanelLeft,
   PanelRight,
+  Palette,
   PenLine,
   Phone,
   Sparkles,
@@ -25,7 +30,8 @@ import {
   type Control,
   type UseFormRegister,
 } from "react-hook-form";
-import type { CVData, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
+import type { CVData, DetailFieldKey, PhotoMode, SkillLibrary } from "@/lib/cv-schema";
+import { VisibilityToggle } from "@/components/ui/VisibilityToggle";
 import type { CvAccentId } from "@/lib/cv-accents";
 import { CV_ACCENTS, CV_ACCENT_IDS } from "@/lib/cv-accents";
 import { cvTemplateUsesSingleColumn } from "@/lib/cv-templates";
@@ -231,33 +237,21 @@ export function Form({
               <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
                 {(
                   [
-                    { key: "birthDate" as const, lab: "Birth date", Icon: Cake },
                     { key: "location" as const, lab: "Location", Icon: MapPin },
                     { key: "email" as const, lab: "Email", Icon: Mail },
                     { key: "phone" as const, lab: "Phone", Icon: Phone },
                     { key: "website" as const, lab: "Website", Icon: Globe },
                   ] as const
                 ).map(({ key, lab, Icon }) => (
-                  <label key={key} className={cn("min-w-0", formLabelControlStack)}>
-                    <span
-                      className={cn(
-                        formLabelClass,
-                        "inline-flex items-center gap-1.5",
-                      )}
-                    >
-                      <Icon
-                        className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400"
-                        aria-hidden
-                      />
-                      {lab}
-                    </span>
+                  <DetailFieldWithVisibility key={key} detailKey={key} label={lab} icon={Icon}>
                     <input
                       className={formFieldSectionClass}
                       {...register(`sidebar.details.${key}`)}
                     />
-                  </label>
+                  </DetailFieldWithVisibility>
                 ))}
                 <PrefixedHandleField
+                  detailKey="linkedIn"
                   name="sidebar.details.linkedIn"
                   label="LinkedIn"
                   icon={Linkedin}
@@ -267,6 +261,7 @@ export function Form({
                   control={control}
                 />
                 <PrefixedHandleField
+                  detailKey="gitHub"
                   name="sidebar.details.gitHub"
                   label="GitHub"
                   icon={Github}
@@ -275,6 +270,39 @@ export function Form({
                   compose={composeGitHubValue}
                   control={control}
                 />
+                {(
+                  [
+                    { key: "portfolio" as const, lab: "Portfolio", Icon: Palette },
+                    {
+                      key: "workAuthorization" as const,
+                      lab: "Work authorization",
+                      Icon: BadgeCheck,
+                    },
+                    {
+                      key: "availability" as const,
+                      lab: "Availability",
+                      Icon: CalendarClock,
+                    },
+                    {
+                      key: "workMode" as const,
+                      lab: "Work mode",
+                      Icon: Laptop,
+                    },
+                    {
+                      key: "drivingLicense" as const,
+                      lab: "Driving license",
+                      Icon: Car,
+                    },
+                    { key: "birthDate" as const, lab: "Birth date", Icon: Cake },
+                  ] as const
+                ).map(({ key, lab, Icon }) => (
+                  <DetailFieldWithVisibility key={key} detailKey={key} label={lab} icon={Icon}>
+                    <input
+                      className={formFieldSectionClass}
+                      {...register(`sidebar.details.${key}`)}
+                    />
+                  </DetailFieldWithVisibility>
+                ))}
               </div>
             </AccordionItem>
 
@@ -373,7 +401,62 @@ function SkillsLibrarySection({
   );
 }
 
+function DetailFieldWithVisibility({
+  detailKey,
+  label,
+  icon: Icon,
+  children,
+}: {
+  detailKey: DetailFieldKey;
+  label: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  const { control, setValue } = useFormContext<CVData>();
+  const enabled = useWatch({
+    control,
+    name: `sidebar.detailsEnabled.${detailKey}`,
+  });
+  const visibleOnCv = enabled !== false;
+
+  return (
+    <div
+      className={cn(
+        "min-w-0",
+        formLabelControlStack,
+        !visibleOnCv && "opacity-70",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={cn(
+            formLabelClass,
+            "inline-flex min-w-0 items-center gap-1.5",
+          )}
+        >
+          <Icon
+            className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400"
+            aria-hidden
+          />
+          {label}
+        </span>
+        <VisibilityToggle
+          visible={visibleOnCv}
+          label={label}
+          onToggle={() =>
+            setValue(`sidebar.detailsEnabled.${detailKey}`, !visibleOnCv, {
+              shouldDirty: true,
+            })
+          }
+        />
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function PrefixedHandleField({
+  detailKey,
   name,
   label,
   icon: Icon,
@@ -382,6 +465,7 @@ function PrefixedHandleField({
   compose,
   control,
 }: {
+  detailKey: DetailFieldKey;
   name: "sidebar.details.linkedIn" | "sidebar.details.gitHub";
   label: string;
   icon: LucideIcon;
@@ -390,12 +474,36 @@ function PrefixedHandleField({
   compose: (handle: string) => string;
   control: Control<CVData>;
 }) {
+  const { setValue } = useFormContext<CVData>();
+  const enabled = useWatch({
+    control,
+    name: `sidebar.detailsEnabled.${detailKey}`,
+  });
+  const visibleOnCv = enabled !== false;
+
   return (
-    <label className={cn("min-w-0", formLabelControlStack)}>
-      <span className={cn(formLabelClass, "inline-flex items-center gap-1.5")}>
-        <Icon className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400" aria-hidden />
-        {label}
-      </span>
+    <div
+      className={cn(
+        "min-w-0",
+        formLabelControlStack,
+        !visibleOnCv && "opacity-70",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn(formLabelClass, "inline-flex items-center gap-1.5")}>
+          <Icon className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400" aria-hidden />
+          {label}
+        </span>
+        <VisibilityToggle
+          visible={visibleOnCv}
+          label={label}
+          onToggle={() =>
+            setValue(`sidebar.detailsEnabled.${detailKey}`, !visibleOnCv, {
+              shouldDirty: true,
+            })
+          }
+        />
+      </div>
       <Controller
         control={control}
         name={name}
@@ -429,7 +537,7 @@ function PrefixedHandleField({
           </div>
         )}
       />
-    </label>
+    </div>
   );
 }
 

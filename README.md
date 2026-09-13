@@ -6,11 +6,16 @@ A web app for building CVs: a validated form, live preview, themes, browser stor
 
 ## Features
 
-- **Editor** — profile, experience, education, skills (tag library), photo, layout options.
-- **Preview** — updates as you type; theme selection (light / dark variants).
-- **Local storage** — CV versions in `localStorage` (prefix `cv-gen:`).
+- **Editor** — profile, experience (with per-role and per-bullet visibility), education, skills (tag library), sidebar details, photo, layout options.
+- **Preview** — updates as you type; theme and accent selection.
+- **Local storage** — multiple named CV versions in `localStorage` (prefix `cv-gen:`); JSON import/export.
 - **PDF** — server-side rendering (Playwright + Chromium), print CSS (`public/cv-print.css` built from Tailwind entry).
 - **AI draft** (optional) — `POST /api/generate-cv` with `OPENAI_API_KEY`; returns JSON matching the app schema.
+
+## Future ideas
+
+- **Job-tailored variants** — generate a CV variant from a job posting, with a review step for each suggested change before anything is applied.
+- **Version compare & rollback** — diff two saved versions side by side and restore a previous revision.
 
 ## Requirements
 
