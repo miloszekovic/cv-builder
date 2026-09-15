@@ -15,9 +15,10 @@ export const DETAIL_FIELD_KEYS = [
   "linkedIn",
   "gitHub",
   "portfolio",
-  "workAuthorization",
-  "availability",
   "workMode",
+  "workAuthorization",
+  "engagementType",
+  "availability",
   "drivingLicense",
   "birthDate",
 ] as const satisfies readonly DetailFieldKey[];

@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Car,
   Github,
+  Handshake,
   Laptop,
   Globe,
   Linkedin,
@@ -274,19 +275,24 @@ export function Form({
                   [
                     { key: "portfolio" as const, lab: "Portfolio", Icon: Palette },
                     {
+                      key: "workMode" as const,
+                      lab: "Work mode",
+                      Icon: Laptop,
+                    },
+                    {
                       key: "workAuthorization" as const,
                       lab: "Work authorization",
                       Icon: BadgeCheck,
                     },
                     {
+                      key: "engagementType" as const,
+                      lab: "Engagement type",
+                      Icon: Handshake,
+                    },
+                    {
                       key: "availability" as const,
                       lab: "Availability",
                       Icon: CalendarClock,
-                    },
-                    {
-                      key: "workMode" as const,
-                      lab: "Work mode",
-                      Icon: Laptop,
                     },
                     {
                       key: "drivingLicense" as const,

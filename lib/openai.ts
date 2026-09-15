@@ -49,7 +49,7 @@ function buildUserPrompt(input: GenerateCvInput) {
     "Return a single JSON object with keys: meta, body, sidebar — matching this TypeScript shape:",
     "{ meta: { versionName?, targetRole?, sidebarPosition: 'left'|'right', accent?: 'teal'|'ocean'|'lavender'|'rose'|'sage'|'clay'|'indigo' },",
     "  body: { image?, photoMode?: 'image'|'initials'|'none', name?, mainRole?, profile?, experience?: Array<{ enabled?: boolean, role?, company?, country?, startMonth?: 1-12, startYear?, endMonth?: 1-12, endYear?: number|'present', intro?, bullets?: Array<{ text?, enabled? }>, outro? }> },",
-    "  sidebar: { details?: { birthDate?, location?, email?, phone?, website?, portfolio?, workAuthorization?, availability?, workMode?, drivingLicense?, linkedIn?, gitHub? }, detailsEnabled?: { birthDate?, location?, email?, phone?, website?, portfolio?, workAuthorization?, availability?, workMode?, drivingLicense?, linkedIn?, gitHub? }, education?: Array<{ university?, title? }>,",
+    "  sidebar: { details?: { birthDate?, location?, email?, phone?, website?, portfolio?, workAuthorization?, engagementType?, availability?, workMode?, drivingLicense?, linkedIn?, gitHub? }, detailsEnabled?: { birthDate?, location?, email?, phone?, website?, portfolio?, workAuthorization?, engagementType?, availability?, workMode?, drivingLicense?, linkedIn?, gitHub? }, education?: Array<{ university?, title? }>,",
     "    skills?: Array<{ categoryId: 'frontEnd'|'uiUx'|'tools'|'aiAutomation'|'principles'|'cms', visibleTags: string[] }>,",
     "    certificates?: Array<{ year?, name? }>, languages?: Array<{ name?, level? }>, hobbiesText?: string } }",
   ].join("\n");
